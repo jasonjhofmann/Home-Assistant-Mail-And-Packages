@@ -15,6 +15,7 @@
       "scan_too_low": "Interval skenování je příliš nízký (minimum 5)",
       "timeout_too_low": "IMAP timeout je příliš nízký (minimum 10)",
       "invalid_email_format": "Invalid email address format.",
+      "invalid_sender_format": "Neplatný formát adresy odesílatele nebo domény.",
       "path_not_found": "Directory not found",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
       "ssl_error": "An SSL error occurred. Change SSL cipher list and try again."
@@ -123,6 +124,13 @@
         },
         "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
         "title": "Amazon Settings"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Další adresy odesílatelů obchodů Shopify"
+        },
+        "description": "Obchody Shopify, které odesílají e-maily z vlastní domény (místo sdílené infrastruktury Shopify), nejsou rozpoznány automaticky. Zadejte jejich adresy odesílatelů nebo domény oddělené čárkami (např. orders@examplestore.com, examplestore.com), nebo (none) pro vymazání tohoto nastavení.",
+        "title": "Nastavení Shopify"
       },
       "reconfig_imap": {
         "data": {
@@ -251,6 +259,13 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Další adresy odesílatelů obchodů Shopify"
+        },
+        "description": "Obchody Shopify, které odesílají e-maily z vlastní domény (místo sdílené infrastruktury Shopify), nejsou rozpoznány automaticky. Zadejte jejich adresy odesílatelů nebo domény oddělené čárkami (např. orders@examplestore.com, examplestore.com), nebo (none) pro vymazání tohoto nastavení.",
+        "title": "Nastavení Shopify"
       },
       "options_storage": {
         "title": "Image storage location",

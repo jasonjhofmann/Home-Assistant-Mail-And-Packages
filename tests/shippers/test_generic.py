@@ -1440,6 +1440,94 @@ async def test_shopify_delivered_class(hass, mock_imap_shopify_delivered):
     assert result[ATTR_TRACKING] == ["53495"]
 
 
+@pytest.mark.asyncio
+async def test_shopify_custom_domain_class(hass, mock_imap_shopify_custom_domain):
+    """Test a custom-domain store's email with the shopify_senders option set.
+
+    The store sends from its own domain, so it is only matched because the
+    user listed that domain in shopify_senders; the IMAP search criteria must
+    include the extra sender alongside the built-in ones.
+    """
+    shipper = GenericShipper(
+        hass,
+        {"image_path": "test/path/", "shopify_senders": ["exampleoutfitters.com"]},
+    )
+
+    result = await shipper.process(
+        mock_imap_shopify_custom_domain,
+        "today",
+        "shopify_packages",
+    )
+    assert result[ATTR_COUNT] == 1
+    assert result[ATTR_TRACKING] == ["EO-1042"]
+
+    searches = [
+        str(call.args[0])
+        for call in mock_imap_shopify_custom_domain.search.call_args_list
+        if call.args
+    ]
+    assert any('FROM "exampleoutfitters.com"' in search for search in searches)
+    assert any('FROM "t.shopifyemail.com"' in search for search in searches)
+
+
+@pytest.mark.parametrize(
+    ("config", "sensor_type", "expected"),
+    [
+        # CSV string form (as stored by older/manual configs)
+        (
+            {"shopify_senders": "orders@examplestore.com, examplestore.com"},
+            "shopify_packages",
+            [
+                "t.shopifyemail.com",
+                "no-reply@parcelpanel.net",
+                "orders@examplestore.com",
+                "examplestore.com",
+            ],
+        ),
+        # List form (as stored by the config flow)
+        (
+            {"shopify_senders": ["examplestore.com"]},
+            "shopify_delivered",
+            ["t.shopifyemail.com", "no-reply@parcelpanel.net", "examplestore.com"],
+        ),
+        # Sentinel and empty values are no-ops
+        (
+            {"shopify_senders": "(none)"},
+            "shopify_packages",
+            ["t.shopifyemail.com", "no-reply@parcelpanel.net"],
+        ),
+        (
+            {"shopify_senders": []},
+            "shopify_packages",
+            ["t.shopifyemail.com", "no-reply@parcelpanel.net"],
+        ),
+        (
+            {},
+            "shopify_packages",
+            ["t.shopifyemail.com", "no-reply@parcelpanel.net"],
+        ),
+        # Re-entering a built-in sender must not produce duplicate criteria
+        (
+            {"shopify_senders": ["t.shopifyemail.com", "examplestore.com"]},
+            "shopify_delivering",
+            ["t.shopifyemail.com", "no-reply@parcelpanel.net", "examplestore.com"],
+        ),
+    ],
+)
+def test_merge_extra_senders(hass, config, sensor_type, expected):
+    """Test merging user-configured extra senders into the built-in list."""
+    shipper = GenericShipper(hass, config)
+    base = list(SENSOR_DATA[sensor_type]["email"])
+    assert shipper._merge_extra_senders(sensor_type, base) == expected
+
+
+def test_merge_extra_senders_non_extra_shipper(hass):
+    """Shippers without an extra-senders option pass through unchanged."""
+    shipper = GenericShipper(hass, {"shopify_senders": ["examplestore.com"]})
+    base = ["mcinfo@ups.com"]
+    assert shipper._merge_extra_senders("ups_delivering", base) == ["mcinfo@ups.com"]
+
+
 @pytest.mark.parametrize(
     ("subject", "expected_sensor"),
     [

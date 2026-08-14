@@ -12,6 +12,7 @@
       "amazon_domain": "Érvénytelen továbbítási e-mail cím.",
       "file_not_found": "Képfájl nem található",
       "invalid_email_format": "Érvénytelen e-mail cím formátum.",
+      "invalid_sender_format": "Érvénytelen feladói cím- vagy domainformátum.",
       "missing_forwarded_emails": "Hiányzó továbbított e-mail címek. Megadhatja a '(none)' értéket a beállítás törléséhez.",
       "path_not_found": "Könyvtár nem található",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Kérjük, adja meg azt a domain-t, ahonnan az Amazon e-maileket küld (pl.: amazon.com vagy amazon.de)\n\nHa az Amazon továbbított e-maileket használ, kérjük, válassza el minden címet vesszővel, vagy írja be, hogy (nincs), hogy törölje ezt a beállítást.\n\nMegjegyzés: ha az előző lépésben beállított egy továbbítási fejlécet, a továbbítási cím mező nem jelenik meg — a fejléc automatikusan kezeli az Amazon e-mailek egyeztetését.",
         "title": "Amazon beállítások"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Shopify áruházak további feladói címei"
+        },
+        "description": "A saját domainről küldő Shopify áruházak (a Shopify közös infrastruktúrája helyett) nem kerülnek automatikusan felismerésre. Adja meg a feladói címeiket vagy domainjeiket vesszővel elválasztva (pl. orders@examplestore.com, examplestore.com), vagy (none) a beállítás törléséhez.",
+        "title": "Shopify beállítások"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon továbbított e-mail címek",
           "amazon_days": "Napok visszamenőleg az Amazon e-mailek ellenőrzéséhez"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Shopify áruházak további feladói címei"
+        },
+        "description": "A saját domainről küldő Shopify áruházak (a Shopify közös infrastruktúrája helyett) nem kerülnek automatikusan felismerésre. Adja meg a feladói címeiket vagy domainjeiket vesszővel elválasztva (pl. orders@examplestore.com, examplestore.com), vagy (none) a beállítás törléséhez.",
+        "title": "Shopify beállítások"
       },
       "options_storage": {
         "title": "Képtárolási hely",

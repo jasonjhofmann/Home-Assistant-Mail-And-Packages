@@ -2,6 +2,7 @@
 
 import contextlib
 import logging
+import re
 import ssl
 from collections.abc import Mapping
 from pathlib import Path
@@ -54,6 +55,7 @@ from .const import (
     CONF_POST_DE_CUSTOM_IMG,
     CONF_POST_DE_CUSTOM_IMG_FILE,
     CONF_SCAN_INTERVAL,
+    CONF_SHOPIFY_SENDERS,
     CONF_STORAGE,
     CONF_UPS_CUSTOM_IMG,
     CONF_UPS_CUSTOM_IMG_FILE,
@@ -87,6 +89,7 @@ from .const import (
     DEFAULT_POST_DE_CUSTOM_IMG,
     DEFAULT_POST_DE_CUSTOM_IMG_FILE,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SHOPIFY_SENDERS,
     DEFAULT_STORAGE,
     DEFAULT_UPS_CUSTOM_IMG,
     DEFAULT_UPS_CUSTOM_IMG_FILE,
@@ -110,6 +113,14 @@ AMAZON_SENSORS = [
     "amazon_delivered",
     "amazon_exception",
 ]
+SHOPIFY_SENSORS = [
+    "shopify_packages",
+    "shopify_delivering",
+    "shopify_delivered",
+]
+# Bare domain, e.g. "examplestore.com" — IMAP FROM matching is substring-based,
+# so a domain entry matches any sender at or under that domain.
+DOMAIN_REGEX = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$")
 _LOGGER = logging.getLogger(__name__)
 AMAZON_EMAIL_ERROR = (
     "Amazon domain found in email: %s, this may cause errors when searching emails."
@@ -256,6 +267,54 @@ def _validate_path_input(
             errors[CONF_STORAGE] = "path_not_found"
 
 
+def _check_shopify_senders(senders: str) -> tuple[list, list | str]:
+    """Validate and format extra Shopify sender addresses/domains.
+
+    Entries are comma-separated and may be full email addresses
+    (orders@examplestore.com) or bare domains (examplestore.com) — IMAP FROM
+    matching is substring-based, so both forms work identically at search time.
+
+    Returns tuple: list of error codes (or ["ok"]), parsed list of senders.
+    """
+    if senders in ("", "(none)", '""'):
+        return ["ok"], []
+
+    errors = []
+    parsed = []
+    for sender in senders.split(","):
+        sender = sender.strip()
+        if not sender:
+            continue
+        if "@" in sender:
+            if not validate_email_address(sender):
+                _LOGGER.error("Invalid sender email address: %s", sender)
+                errors.append("invalid_sender_format")
+                continue
+        elif not DOMAIN_REGEX.match(sender):
+            _LOGGER.error("Invalid sender domain: %s", sender)
+            errors.append("invalid_sender_format")
+            continue
+        parsed.append(sender)
+
+    if len(errors) == 0:
+        errors.append("ok")
+
+    return errors, parsed
+
+
+async def _validate_shopify_senders(user_input: dict, errors: dict) -> None:
+    """Validate extra Shopify sender addresses/domains in user_input."""
+    if CONF_SHOPIFY_SENDERS not in user_input:
+        return
+    if not isinstance(user_input[CONF_SHOPIFY_SENDERS], str):
+        return
+    status, sender_list = _check_shopify_senders(user_input[CONF_SHOPIFY_SENDERS])
+    if status[0] != "ok":
+        errors[CONF_SHOPIFY_SENDERS] = status[0]
+    else:
+        user_input[CONF_SHOPIFY_SENDERS] = sender_list
+
+
 async def _validate_amazon_fwds(user_input: dict, errors: dict) -> None:
     """Validate amazon forwarding email addresses in user_input."""
     if CONF_AMAZON_FWDS not in user_input:
@@ -300,6 +359,7 @@ async def _validate_user_input(
     errors = {}
 
     await _validate_amazon_fwds(user_input, errors)
+    await _validate_shopify_senders(user_input, errors)
 
     # Check for forwarding header mode first — it takes precedence over address list
     forwarding_header = user_input.get(CONF_FORWARDING_HEADER, "")
@@ -781,6 +841,31 @@ def _get_schema_step_amazon(
     return vol.Schema(schema_dict)
 
 
+def _get_schema_step_shopify(
+    user_input: dict,
+    default_dict: dict,
+) -> Any:
+    """Get a schema using the default_dict as a backup."""
+    if user_input is None:
+        user_input = {}
+
+    def _get_default(key: str, fallback_default: Any = None) -> Any:
+        """Get default value for key."""
+        value = user_input.get(key, default_dict.get(key, fallback_default))
+        if isinstance(value, list):
+            value = ", ".join(value)
+        return value
+
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_SHOPIFY_SENDERS,
+                default=_get_default(CONF_SHOPIFY_SENDERS, DEFAULT_SHOPIFY_SENDERS),
+            ): cv.string,
+        },
+    )
+
+
 def _get_schema_step_forwarded_emails(
     user_input: list,
     default_dict: list,
@@ -1071,6 +1156,10 @@ class MailAndPackagesFlowHandler(
                     sensor in self._data[CONF_RESOURCES] for sensor in AMAZON_SENSORS
                 ):
                     return await self.async_step_config_amazon()
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_config_shopify()
                 has_custom_image = (
                     self._data.get(CONF_CUSTOM_IMG)
                     or self._data.get(CONF_AMAZON_CUSTOM_IMG)
@@ -1166,6 +1255,10 @@ class MailAndPackagesFlowHandler(
             self._data.update(user_input)
             self._errors, user_input = await _validate_user_input(self._data, self.hass)
             if len(self._errors) == 0:
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_config_shopify()
                 if (
                     self._data.get(CONF_CUSTOM_IMG)
                     or self._data.get(CONF_AMAZON_CUSTOM_IMG)
@@ -1200,6 +1293,42 @@ class MailAndPackagesFlowHandler(
             errors=self._errors,
         )
 
+    async def async_step_config_shopify(self, user_input=None):
+        """Configure form step shopify."""
+        self._errors = {}
+        if user_input is not None:
+            self._data.update(user_input)
+            self._errors, user_input = await _validate_user_input(self._data, self.hass)
+            if len(self._errors) == 0:
+                if (
+                    self._data.get(CONF_CUSTOM_IMG)
+                    or self._data.get(CONF_AMAZON_CUSTOM_IMG)
+                    or self._data.get(CONF_UPS_CUSTOM_IMG)
+                    or self._data.get(CONF_WALMART_CUSTOM_IMG)
+                    or self._data.get(CONF_FEDEX_CUSTOM_IMG)
+                    or self._data.get(CONF_GENERIC_CUSTOM_IMG)
+                    or self._data.get(CONF_POST_DE_CUSTOM_IMG)
+                ):
+                    return await self.async_step_config_3()
+                return await self.async_step_config_storage()
+
+            return await self._show_config_shopify(user_input)
+
+        return await self._show_config_shopify(user_input)
+
+    async def _show_config_shopify(self, user_input):
+        """Step shopify setup."""
+        # Defaults
+        defaults = {
+            CONF_SHOPIFY_SENDERS: DEFAULT_SHOPIFY_SENDERS,
+        }
+
+        return self.async_show_form(
+            step_id="config_shopify",
+            data_schema=_get_schema_step_shopify(user_input, defaults),
+            errors=self._errors,
+        )
+
     async def async_step_config_forwarded_emails(self, user_input=None):
         """Configure form step forwarded emails."""
         self._errors = {}
@@ -1211,6 +1340,10 @@ class MailAndPackagesFlowHandler(
                     sensor in self._data[CONF_RESOURCES] for sensor in AMAZON_SENSORS
                 ):
                     return await self.async_step_config_amazon()
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_config_shopify()
                 if self._data[CONF_CUSTOM_IMG]:
                     return await self.async_step_config_3()
 
@@ -1429,6 +1562,10 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
                     sensor in self._data[CONF_RESOURCES] for sensor in AMAZON_SENSORS
                 ):
                     return await self.async_step_options_amazon()
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_options_shopify()
                 if self._data.get(CONF_CUSTOM_IMG, False):
                     return await self.async_step_options_3()
                 return await self.async_step_options_storage()
@@ -1462,6 +1599,10 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
                     sensor in self._data[CONF_RESOURCES] for sensor in AMAZON_SENSORS
                 ):
                     return await self.async_step_options_amazon()
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_options_shopify()
                 if self._data.get(CONF_CUSTOM_IMG, False):
                     return await self.async_step_options_3()
                 return await self.async_step_options_storage()
@@ -1487,6 +1628,10 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
             self._data.update(user_input)
             self._errors, user_input = await _validate_user_input(self._data, self.hass)
             if len(self._errors) == 0:
+                if any(
+                    sensor in self._data[CONF_RESOURCES] for sensor in SHOPIFY_SENSORS
+                ):
+                    return await self.async_step_options_shopify()
                 if self._data.get(CONF_CUSTOM_IMG, False):
                     return await self.async_step_options_3()
                 return await self.async_step_options_storage()
@@ -1505,6 +1650,39 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
                 self._data,
                 forwarding_header=self._data.get(CONF_FORWARDING_HEADER, ""),
             ),
+            errors=self._errors,
+        )
+
+    async def async_step_options_shopify(self, user_input=None):
+        """Configure shopify options."""
+        self._errors = {}
+        if user_input is not None:
+            if user_input.get(CONF_SHOPIFY_SENDERS) == "(none)":
+                user_input[CONF_SHOPIFY_SENDERS] = []
+            self._data.update(user_input)
+            self._errors, user_input = await _validate_user_input(self._data, self.hass)
+            # Only block on errors this form can render: the frontend shows
+            # error keys matching the schema (or "base") only, so an error on
+            # a field owned by a LATER step (e.g. a stale custom_img_file)
+            # would re-show this form with no visible message and dead-end
+            # the flow. Let those surface at their owning step instead.
+            if CONF_SHOPIFY_SENDERS not in self._errors:
+                self._errors = {}
+                if self._data.get(CONF_CUSTOM_IMG, False):
+                    return await self.async_step_options_3()
+                return await self.async_step_options_storage()
+            self._errors = {CONF_SHOPIFY_SENDERS: self._errors[CONF_SHOPIFY_SENDERS]}
+            return await self._show_options_shopify(user_input)
+        return await self._show_options_shopify(user_input)
+
+    async def _show_options_shopify(self, user_input):
+        """Step shopify setup."""
+        if self._data.get(CONF_SHOPIFY_SENDERS) == []:
+            self._data[CONF_SHOPIFY_SENDERS] = "(none)"
+
+        return self.async_show_form(
+            step_id="options_shopify",
+            data_schema=_get_schema_step_shopify(user_input, self._data),
             errors=self._errors,
         )
 
@@ -1559,6 +1737,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
                     CONF_AMAZON_FWDS,
                     CONF_AMAZON_DOMAIN,
                     CONF_AMAZON_DAYS,
+                    CONF_SHOPIFY_SENDERS,
                     CONF_STORAGE,
                     "generate_mp4",
                     "generate_grid",

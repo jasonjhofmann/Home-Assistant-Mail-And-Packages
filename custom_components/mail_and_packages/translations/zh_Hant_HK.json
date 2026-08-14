@@ -12,6 +12,7 @@
       "amazon_domain": "無效的轉發電郵地址。",
       "file_not_found": "找不到圖像檔案",
       "invalid_email_format": "無效的電郵地址格式。",
+      "invalid_sender_format": "寄件者地址或網域格式無效。",
       "missing_forwarded_emails": "缺少轉發的電郵地址。您可以輸入 '(none)' 來清除此設定。",
       "path_not_found": "找不到目錄",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "請輸入亞馬遜發送電子郵件的域名（例如：amazon.com或amazon.de）\n\n如果使用亞馬遜轉發的電子郵件，請用逗號分隔每個地址，或輸入（無）以清除此設定。\n\n注意：如果您在上一步中設定了轉寄標頭，轉寄地址欄位將不會顯示 — 標頭會自動處理 Amazon 電郵的配對。",
         "title": "Amazon 設定"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Shopify 商店的額外寄件者地址"
+        },
+        "description": "從自己網域寄送郵件的 Shopify 商店（而非使用 Shopify 的共用寄送基礎架構）不會被自動識別。請輸入其寄件者地址或網域，以逗號分隔（例如 orders@examplestore.com, examplestore.com），或輸入 (none) 以清除此設定。",
+        "title": "Shopify 設定"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon 轉發的電郵地址",
           "amazon_days": "檢查Amazon電郵的天數"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Shopify 商店的額外寄件者地址"
+        },
+        "description": "從自己網域寄送郵件的 Shopify 商店（而非使用 Shopify 的共用寄送基礎架構）不會被自動識別。請輸入其寄件者地址或網域，以逗號分隔（例如 orders@examplestore.com, examplestore.com），或輸入 (none) 以清除此設定。",
+        "title": "Shopify 設定"
       },
       "options_storage": {
         "title": "圖像儲存位置",

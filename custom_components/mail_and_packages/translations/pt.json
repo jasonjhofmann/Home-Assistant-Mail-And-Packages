@@ -12,6 +12,7 @@
       "amazon_domain": "Endereço de encaminhamento de email inválido.",
       "file_not_found": "Arquivo de imagem não encontrado",
       "invalid_email_format": "Formato de endereço de email inválido.",
+      "invalid_sender_format": "Formato de endereço de remetente ou domínio inválido.",
       "missing_forwarded_emails": "Endereços de email encaminhados em falta. Pode introduzir '(none)' para limpar esta configuração.",
       "path_not_found": "Diretório não encontrado",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Por favor, insira o domínio de onde a Amazon envia e-mails (por exemplo: amazon.com ou amazon.de)\n\nSe estiver usando e-mails encaminhados pela Amazon, separe cada endereço com uma vírgula ou insira (nenhum) para limpar essa configuração.\n\nNota: se configurou um cabeçalho de reencaminhamento no passo anterior, o campo de endereço de reencaminhamento não aparecerá — o cabeçalho trata automaticamente da correspondência de e-mails da Amazon.",
         "title": "Configurações da Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Endereços de remetente adicionais de lojas Shopify"
+        },
+        "description": "As lojas Shopify que enviam a partir do seu próprio domínio (em vez da infraestrutura partilhada do Shopify) não são detetadas automaticamente. Introduza os endereços de remetente ou domínios separados por vírgulas (ex.: orders@examplestore.com, examplestore.com), ou (none) para limpar esta definição.",
+        "title": "Definições do Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "A Amazon encaminhou endereços de email",
           "amazon_days": "Dias atrás para verificar emails da Amazon"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Endereços de remetente adicionais de lojas Shopify"
+        },
+        "description": "As lojas Shopify que enviam a partir do seu próprio domínio (em vez da infraestrutura partilhada do Shopify) não são detetadas automaticamente. Introduza os endereços de remetente ou domínios separados por vírgulas (ex.: orders@examplestore.com, examplestore.com), ou (none) para limpar esta definição.",
+        "title": "Definições do Shopify"
       },
       "options_storage": {
         "title": "Local de armazenamento de imagens",

@@ -12,6 +12,7 @@
       "amazon_domain": "Neveljaven naslov za preusmerjanje e-pošte.",
       "file_not_found": "Slikovna datoteka ni najdena",
       "invalid_email_format": "Neveljaven format e-poštnega naslova.",
+      "invalid_sender_format": "Neveljavna oblika naslova pošiljatelja ali domene.",
       "missing_forwarded_emails": "Manjkajo posredovani e-poštni naslovi. Vnesete lahko '(none)' za izbris te nastavitve.",
       "path_not_found": "Mapa ni najdena",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Prosimo, vnesite domeno, s katere Amazon pošilja e-pošto (npr.: amazon.com ali amazon.de)\n\nČe uporabljate preusmerjena e-poštna sporočila Amazon, ločite vsak naslov z vejico ali vnesite (noben) za izbris te nastavitve.\n\nOpomba: če ste v prejšnjem koraku konfigurirali glavo posredovanja, polje z naslovom posredovanja ne bo prikazano — glava samodejno obravnava ujemanje Amazonovih e-poštnih sporočil.",
         "title": "Nastavitve Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Dodatni naslovi pošiljateljev trgovin Shopify"
+        },
+        "description": "Trgovine Shopify, ki pošiljajo s svoje lastne domene (namesto prek skupne infrastrukture Shopify), niso samodejno prepoznane. Vnesite njihove naslove pošiljateljev ali domene, ločene z vejicami (npr. orders@examplestore.com, examplestore.com), ali (none) za izbris te nastavitve.",
+        "title": "Nastavitve Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon je posredoval e-poštne naslove",
           "amazon_days": "Dnevi nazaj za preverjanje Amazonovih e-poštnih sporočil"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Dodatni naslovi pošiljateljev trgovin Shopify"
+        },
+        "description": "Trgovine Shopify, ki pošiljajo s svoje lastne domene (namesto prek skupne infrastrukture Shopify), niso samodejno prepoznane. Vnesite njihove naslove pošiljateljev ali domene, ločene z vejicami (npr. orders@examplestore.com, examplestore.com), ali (none) za izbris te nastavitve.",
+        "title": "Nastavitve Shopify"
       },
       "options_storage": {
         "title": "Lokacija shranjevanja slik",

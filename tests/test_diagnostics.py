@@ -4,7 +4,11 @@ import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.mail_and_packages.const import CONF_AMAZON_FWDS, DOMAIN
+from custom_components.mail_and_packages.const import (
+    CONF_AMAZON_FWDS,
+    CONF_SHOPIFY_SENDERS,
+    DOMAIN,
+)
 from custom_components.mail_and_packages.diagnostics import (
     async_get_config_entry_diagnostics,
     async_get_device_diagnostics,
@@ -30,6 +34,21 @@ async def test_config_entry_diagnostics(hass):
     assert result["config"]["data"][CONF_PASSWORD] == "**REDACTED**"
     assert result["config"]["data"][CONF_USERNAME] == "**REDACTED**"
     assert result["config"]["data"][CONF_AMAZON_FWDS] == "**REDACTED**"
+
+
+@pytest.mark.asyncio
+async def test_config_entry_diagnostics_redacts_shopify_senders(hass):
+    """Extra Shopify senders reveal where the user shops — must be redacted."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="imap.test.email",
+        data={**FAKE_CONFIG_DATA, CONF_SHOPIFY_SENDERS: ["orders@examplestore.com"]},
+    )
+
+    entry.add_to_hass(hass)
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["config"]["data"][CONF_SHOPIFY_SENDERS] == "**REDACTED**"
 
 
 @pytest.mark.asyncio

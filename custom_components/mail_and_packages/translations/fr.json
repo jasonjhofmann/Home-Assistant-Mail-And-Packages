@@ -12,6 +12,7 @@
       "amazon_domain": "Adresse e-mail de transfert invalide.",
       "file_not_found": "Fichier image non trouvé",
       "invalid_email_format": "Format d'adresse e-mail invalide.",
+      "invalid_sender_format": "Format d'adresse d'expéditeur ou de domaine invalide.",
       "missing_forwarded_emails": "Adresses e-mail de transfert manquantes. Vous pouvez entrer '(none)' pour effacer ce paramètre.",
       "path_not_found": "Répertoire non trouvé",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
         "title": "Paramètres Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Adresses d'expéditeur supplémentaires des boutiques Shopify"
+        },
+        "description": "Les boutiques Shopify qui envoient depuis leur propre domaine (plutôt que via l'infrastructure partagée de Shopify) ne sont pas détectées automatiquement. Saisissez leurs adresses d'expéditeur ou domaines séparés par des virgules (ex. : orders@examplestore.com, examplestore.com), ou (none) pour effacer ce paramètre.",
+        "title": "Paramètres Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon a transmis des adresses e-mail",
           "amazon_days": "Jours en arrière pour vérifier les emails Amazon"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Adresses d'expéditeur supplémentaires des boutiques Shopify"
+        },
+        "description": "Les boutiques Shopify qui envoient depuis leur propre domaine (plutôt que via l'infrastructure partagée de Shopify) ne sont pas détectées automatiquement. Saisissez leurs adresses d'expéditeur ou domaines séparés par des virgules (ex. : orders@examplestore.com, examplestore.com), ou (none) pour effacer ce paramètre.",
+        "title": "Paramètres Shopify"
       },
       "options_storage": {
         "title": "Emplacement de stockage des images",

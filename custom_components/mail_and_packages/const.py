@@ -87,6 +87,15 @@ CONF_FORWARDED_EMAILS = "forwarded_emails"
 CONF_FORWARDING_HEADER = "forwarding_header"
 CONF_CUSTOM_DAYS = "custom_days"
 CONF_USPS_PLACEHOLDER = "usps_placeholder"
+CONF_SHOPIFY_SENDERS = "shopify_senders"
+
+# Shippers whose built-in sender list can be extended by the user. Maps the
+# shipper prefix to the config key holding extra sender addresses/domains.
+# Future marketplace shippers with per-store senders add one entry here plus
+# a config-flow field; the merge itself is shared (GenericShipper).
+EXTRA_SENDER_OPTIONS = {
+    "shopify": CONF_SHOPIFY_SENDERS,
+}
 
 # Defaults
 DEFAULT_CAMERA_NAME = "Mail USPS Camera"
@@ -139,6 +148,7 @@ DEFAULT_ALLOW_FORWARDED_EMAILS = False
 DEFAULT_FORWARDED_EMAILS = "(none)"
 DEFAULT_FORWARDING_HEADER = "(none)"
 DEFAULT_USPS_PLACEHOLDER = True
+DEFAULT_SHOPIFY_SENDERS = "(none)"
 
 # Amazon
 AMAZON_DOMAINS = [
@@ -1005,7 +1015,8 @@ SENSOR_DATA = {
     "home_depot_tracking": {"pattern": [r"\bWK\d{8}\b"]},
     # Shopify (standard order-notification templates). Sender varies per
     # store; these cover Shopify's shared sending infrastructure. Stores
-    # sending from their own domain need their sender added here.
+    # sending from their own domain are matched via the user-configurable
+    # shopify_senders option (see EXTRA_SENDER_OPTIONS).
     "shopify_delivered": {
         "email": [
             "t.shopifyemail.com",

@@ -26,6 +26,7 @@ from custom_components.mail_and_packages.const import (
     CAMERA_DATA,
     CAMERA_EXTRACTION_CONFIG,
     CONF_FORWARDING_HEADER,
+    EXTRA_SENDER_OPTIONS,
     MARKETPLACE_CARRIER_TRACKING,
     SENSOR_DATA,
 )
@@ -109,6 +110,7 @@ class GenericShipper(Shipper):
             )
             return {ATTR_COUNT: 0, ATTR_TRACKING: []}
 
+        email_addresses = self._merge_extra_senders(sensor_type, email_addresses)
         forwarding_header, email_addresses = self._resolve_forwarding(email_addresses)
 
         # _delivering/_exception/_packages use the extended window so in-transit
@@ -210,6 +212,33 @@ class GenericShipper(Shipper):
                 await self._copy_generic_placeholder(shipper_cfg)
 
         return result
+
+    def _merge_extra_senders(
+        self, sensor_type: str, email_addresses: list[str]
+    ) -> list[str]:
+        """Append user-configured extra sender addresses for this shipper.
+
+        Marketplace stores that send from their own domain (rather than the
+        platform's shared sending infrastructure) are invisible to the
+        built-in sender list; users list those senders in the shipper's
+        extra-senders option (see EXTRA_SENDER_OPTIONS). IMAP FROM matching
+        is substring-based, so entries may be full addresses or bare domains.
+        """
+        prefix = "_".join(sensor_type.split("_")[:-1])
+        option = EXTRA_SENDER_OPTIONS.get(prefix)
+        if not option:
+            return email_addresses
+        extra = self.config.get(option, [])
+        if isinstance(extra, str):
+            extra = (
+                []
+                if extra == "(none)"
+                else [e.strip() for e in extra.split(",") if e.strip()]
+            )
+        if not extra:
+            return email_addresses
+        # Preserve order and drop duplicates in case a built-in sender is re-entered.
+        return list(dict.fromkeys([*email_addresses, *extra]))
 
     def _resolve_forwarding(self, email_addresses: list[str]) -> tuple[str, list[str]]:
         """Return (forwarding_header, resolved_email_addresses).

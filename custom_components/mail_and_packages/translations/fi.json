@@ -12,6 +12,7 @@
       "amazon_domain": "Virheellinen edelleenlähetettävä sähköpostiosoite.",
       "file_not_found": "Kuvatiedostoa ei löydy",
       "invalid_email_format": "Virheellinen sähköpostiosoitteen muoto.",
+      "invalid_sender_format": "Virheellinen lähettäjäosoitteen tai verkkotunnuksen muoto.",
       "missing_forwarded_emails": "Puuttuvat edelleenlähetetyt sähköpostiosoitteet. Voit syöttää '(none)' tyhjentääksesi tämän asetuksen.",
       "path_not_found": "Hakemistoa ei löydy",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai kirjoita (none) tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
         "title": "Amazonin asetukset"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Shopify-kauppojen lisälähettäjäosoitteet"
+        },
+        "description": "Shopify-kauppoja, jotka lähettävät omasta verkkotunnuksestaan (Shopifyn jaetun infrastruktuurin sijaan), ei tunnisteta automaattisesti. Syötä niiden lähettäjäosoitteet tai verkkotunnukset pilkuilla eroteltuina (esim. orders@examplestore.com, examplestore.com) tai (none) tyhjentääksesi tämän asetuksen.",
+        "title": "Shopify-asetukset"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon välitti sähköpostiosoitteet",
           "amazon_days": "Päiviä, joiden aikana tarkistetaan Amazonin sähköpostit"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Shopify-kauppojen lisälähettäjäosoitteet"
+        },
+        "description": "Shopify-kauppoja, jotka lähettävät omasta verkkotunnuksestaan (Shopifyn jaetun infrastruktuurin sijaan), ei tunnisteta automaattisesti. Syötä niiden lähettäjäosoitteet tai verkkotunnukset pilkuilla eroteltuina (esim. orders@examplestore.com, examplestore.com) tai (none) tyhjentääksesi tämän asetuksen.",
+        "title": "Shopify-asetukset"
       },
       "options_storage": {
         "title": "Kuvien tallennuspaikka",

@@ -12,6 +12,7 @@
       "amazon_domain": "Ogiltig vidarebefordrings e-postadress.",
       "file_not_found": "Bildfilen hittades inte",
       "invalid_email_format": "Ogiltigt format för e-postadress.",
+      "invalid_sender_format": "Ogiltigt format på avsändaradress eller domän.",
       "missing_forwarded_emails": "Saknade vidarebefordrade e-postadresser. Du kan ange '(none)' för att rensa denna inställning.",
       "path_not_found": "Katalogen hittades inte",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
         "title": "Amazon-inställningar"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Ytterligare avsändaradresser för Shopify-butiker"
+        },
+        "description": "Shopify-butiker som skickar från sin egen domän (i stället för Shopifys delade infrastruktur) identifieras inte automatiskt. Ange deras avsändaradresser eller domäner separerade med kommatecken (t.ex. orders@examplestore.com, examplestore.com), eller (none) för att rensa denna inställning.",
+        "title": "Shopify-inställningar"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon vidarebefordrade e-postadresser",
           "amazon_days": "Dagar tillbaka för att kontrollera Amazon-e-postmeddelanden"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Ytterligare avsändaradresser för Shopify-butiker"
+        },
+        "description": "Shopify-butiker som skickar från sin egen domän (i stället för Shopifys delade infrastruktur) identifieras inte automatiskt. Ange deras avsändaradresser eller domäner separerade med kommatecken (t.ex. orders@examplestore.com, examplestore.com), eller (none) för att rensa denna inställning.",
+        "title": "Shopify-inställningar"
       },
       "options_storage": {
         "title": "Bildlagringsplats",

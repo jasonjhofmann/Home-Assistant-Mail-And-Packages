@@ -12,6 +12,7 @@
       "amazon_domain": "Indirizzo email di inoltro non valido.",
       "file_not_found": "File immagine non trovato",
       "invalid_email_format": "Formato dell'indirizzo email non valido.",
+      "invalid_sender_format": "Formato dell'indirizzo mittente o del dominio non valido.",
       "missing_forwarded_emails": "Indirizzi email inoltrati mancanti. Puoi inserire '(none)' per cancellare questa impostazione.",
       "path_not_found": "Directory non trovato",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
         "title": "Impostazioni Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Indirizzi mittente aggiuntivi dei negozi Shopify"
+        },
+        "description": "I negozi Shopify che inviano dal proprio dominio (anziché dall'infrastruttura condivisa di Shopify) non vengono rilevati automaticamente. Inserisci i loro indirizzi mittente o domini separati da virgole (es. orders@examplestore.com, examplestore.com), oppure (none) per cancellare questa impostazione.",
+        "title": "Impostazioni Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon ha inoltrato gli indirizzi email",
           "amazon_days": "Giorni precedenti da controllare per le email di Amazon"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Indirizzi mittente aggiuntivi dei negozi Shopify"
+        },
+        "description": "I negozi Shopify che inviano dal proprio dominio (anziché dall'infrastruttura condivisa di Shopify) non vengono rilevati automaticamente. Inserisci i loro indirizzi mittente o domini separati da virgole (es. orders@examplestore.com, examplestore.com), oppure (none) per cancellare questa impostazione.",
+        "title": "Impostazioni Shopify"
       },
       "options_storage": {
         "title": "Posizione di archiviazione delle immagini",

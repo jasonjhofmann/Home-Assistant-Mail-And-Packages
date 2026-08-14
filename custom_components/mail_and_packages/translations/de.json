@@ -12,6 +12,7 @@
       "amazon_domain": "Ungültige Weiterleitungs-E-Mail-Adresse.",
       "file_not_found": "Bilddatei nicht gefunden",
       "invalid_email_format": "Ungültiges E-Mail-Adressformat.",
+      "invalid_sender_format": "Ungültiges Format der Absenderadresse oder Domain.",
       "missing_forwarded_emails": "Fehlende weitergeleitete E-Mail-Adressen. Sie können '(none)' eingeben, um diese Einstellung zu löschen.",
       "path_not_found": "Verzeichnis nicht gefunden",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -64,6 +65,13 @@
         },
         "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
         "title": "Amazon Einstellungen"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Zusätzliche Absenderadressen von Shopify-Shops"
+        },
+        "description": "Shopify-Shops, die von ihrer eigenen Domain senden (statt über Shopifys gemeinsame Infrastruktur), werden nicht automatisch erkannt. Geben Sie deren Absenderadressen oder Domains durch Kommas getrennt ein (z. B. orders@examplestore.com, examplestore.com) oder (none), um diese Einstellung zu löschen.",
+        "title": "Shopify-Einstellungen"
       },
       "reconfig_2": {
         "data": {
@@ -268,6 +276,13 @@
           "amazon_fwds": "Amazon hat E-Mail-Adressen weitergeleitet",
           "amazon_days": "Tage zurück, um nach Amazon-E-Mails zu suchen"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Zusätzliche Absenderadressen von Shopify-Shops"
+        },
+        "description": "Shopify-Shops, die von ihrer eigenen Domain senden (statt über Shopifys gemeinsame Infrastruktur), werden nicht automatisch erkannt. Geben Sie deren Absenderadressen oder Domains durch Kommas getrennt ein (z. B. orders@examplestore.com, examplestore.com) oder (none), um diese Einstellung zu löschen.",
+        "title": "Shopify-Einstellungen"
       },
       "options_storage": {
         "title": "Speicherort für Bilder",

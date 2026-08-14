@@ -1471,3 +1471,17 @@ def mock_imap_shopify_delivered(mock_imap):
     )
     mock_imap.fetch.side_effect = _generate_fetch_side_effect(email_file)
     return mock_imap
+
+
+@pytest.fixture
+def mock_imap_shopify_custom_domain(mock_imap):
+    """Mock IMAP search with a Shopify on-the-way email from a store's own domain."""
+    mock_imap.select.return_value = ("OK", [b""])
+    mock_imap.uid.return_value = MagicMock(result="OK", lines=[b"1"])
+    email_file = Path(
+        "tests/test_emails/shopify_custom_domain_on_the_way.eml"
+    ).read_text(
+        encoding="utf-8",
+    )
+    mock_imap.fetch.side_effect = _generate_fetch_side_effect(email_file)
+    return mock_imap

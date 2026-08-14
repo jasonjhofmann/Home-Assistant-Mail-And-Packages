@@ -12,6 +12,7 @@
       "amazon_domain": "Ongeldig doorstuur e-mailadres.",
       "file_not_found": "Afbeeldingsbestand niet gevonden",
       "invalid_email_format": "Ongeldig e-mailadres formaat.",
+      "invalid_sender_format": "Ongeldig formaat van afzenderadres of domein.",
       "missing_forwarded_emails": "Ontbrekende doorgestuurde e-mailadressen. U kunt '(none)' invoeren om deze instelling te wissen.",
       "path_not_found": "Map niet gevonden",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Voer het domein in waarvan Amazon e-mails verstuurt (bijv: amazon.com of amazon.de)\n\nAls u doorgestuurde e-mails van Amazon gebruikt, scheid dan elk adres met een komma of voer (geen) in om deze instelling te wissen.\n\nOpmerking: als u in de vorige stap een doorstuurheader hebt geconfigureerd, verschijnt het doorstuuradresveld niet — de header verwerkt de Amazon e-mailkoppeling automatisch.",
         "title": "Amazon Instellingen"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Extra afzenderadressen van Shopify-winkels"
+        },
+        "description": "Shopify-winkels die vanaf hun eigen domein verzenden (in plaats van via de gedeelde infrastructuur van Shopify) worden niet automatisch herkend. Voer hun afzenderadressen of domeinen in, gescheiden door komma's (bijv. orders@examplestore.com, examplestore.com), of (none) om deze instelling te wissen.",
+        "title": "Shopify-instellingen"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon stuurde e-mailadressen door",
           "amazon_days": "Dagen terug om te controleren op Amazon e-mails"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Extra afzenderadressen van Shopify-winkels"
+        },
+        "description": "Shopify-winkels die vanaf hun eigen domein verzenden (in plaats van via de gedeelde infrastructuur van Shopify) worden niet automatisch herkend. Voer hun afzenderadressen of domeinen in, gescheiden door komma's (bijv. orders@examplestore.com, examplestore.com), of (none) om deze instelling te wissen.",
+        "title": "Shopify-instellingen"
       },
       "options_storage": {
         "title": "Locatie voor afbeeldingsopslag",
