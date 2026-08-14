@@ -1493,3 +1493,124 @@ def test_dedupe_marketplace_empty_marketplace_carrier_tracking():
 
     assert data["etsy_delivering"] == 1
     assert data["etsy_carrier_tracking"] == {"123": "456"}
+
+
+def test_dedupe_marketplace_records_carrier_merchants():
+    """Dropped marketplace packages re-key their merchant to the carrier."""
+    data = {
+        "shopify_delivering": 2,
+        "shopify_carrier_tracking": {
+            "MC1605": "9443743716845537",
+            "PP3024": "YT2434221266046281",
+        },
+        "shopify_merchant_names": {
+            "MC1605": "Example Store",
+            "PP3024": "Example Outfitters",
+        },
+    }
+    tracking_details = {
+        "shopify_delivering": ["MC1605", "PP3024"],
+        "capost_delivering": ["9443743716845537"],
+    }
+    merchant_names = {}
+
+    MailDataUpdateCoordinator._dedupe_marketplace_duplicates(
+        data, tracking_details, merchant_names
+    )
+
+    # Transient keys are consumed
+    assert "shopify_carrier_tracking" not in data
+    assert "shopify_merchant_names" not in data
+    # MC1605 was dropped in favor of Canada Post, so its merchant is re-keyed
+    # under the carrier prefix by the carrier's tracking number; PP3024
+    # survives on the marketplace side under its order id.
+    assert merchant_names["capost"] == {"9443743716845537": "Example Store"}
+    assert merchant_names["shopify"]["PP3024"] == "Example Outfitters"
+    assert data["shopify_delivering"] == 1
+
+
+def test_dedupe_marketplace_pops_merchants_without_store():
+    """The merchant_names store is optional; transient keys are still consumed."""
+    data = {
+        "shopify_delivering": 1,
+        "shopify_merchant_names": {"MC1605": "Example Store"},
+    }
+    tracking_details = {"shopify_delivering": ["MC1605"]}
+
+    MailDataUpdateCoordinator._dedupe_marketplace_duplicates(data, tracking_details)
+
+    assert "shopify_merchant_names" not in data
+    assert data["shopify_delivering"] == 1
+
+
+@pytest.mark.asyncio
+async def test_attach_merchant_names(hass):
+    """Merchant maps are attached beside tracking lists and stale ids pruned."""
+    coordinator = MailDataUpdateCoordinator(hass, FAKE_CONFIG_DATA)
+    coordinator._merchant_names = {
+        "ups": {
+            "1Z999AA10123456784": "Example Outfitters",
+            "1ZSTALE0000000000": "Old Store",
+        },
+        "shopify": {"PP3024": "Example Store"},
+        "gone": {},
+    }
+    coordinator._in_transit_tracking = {"ups": {"1Z999AA10123456784": "2026-01-01"}}
+    data = {
+        "ups_tracking": ["1Z999AA10123456784"],
+        "ups_delivered_tracking": [],
+        "shopify_packages_tracking": ["PP3024"],
+    }
+
+    coordinator._attach_merchant_names(data)
+
+    assert data["ups_tracking_merchants"] == {
+        "1Z999AA10123456784": "Example Outfitters"
+    }
+    assert data["shopify_packages_tracking_merchants"] == {"PP3024": "Example Store"}
+    # Ids no longer exposed anywhere and not in transit are pruned; empty
+    # prefixes are dropped entirely.
+    assert coordinator._merchant_names["ups"] == {
+        "1Z999AA10123456784": "Example Outfitters"
+    }
+    assert coordinator._merchant_names["shopify"] == {"PP3024": "Example Store"}
+    assert "gone" not in coordinator._merchant_names
+
+
+def test_dedupe_marketplace_upgrades_carrier_merchant():
+    """A later pattern-extracted store name replaces the platform fallback.
+
+    The delivering email (fallback "Etsy") arrives days before the delivered
+    email that carries the real shop name; the carrier-side attribution must
+    upgrade when the better name shows up, and never downgrade back.
+    """
+    merchant_names = {"fedex": {"C1": "Etsy"}}
+    data = {
+        "etsy_delivered": 1,
+        "etsy_carrier_tracking": {"R1": "C1"},
+        "etsy_merchant_names": {"R1": "Example Crafts"},
+    }
+    tracking_details = {
+        "etsy_delivered": ["R1"],
+        "fedex_delivered": ["C1"],
+    }
+
+    MailDataUpdateCoordinator._dedupe_marketplace_duplicates(
+        data, tracking_details, merchant_names
+    )
+    assert merchant_names["fedex"]["C1"] == "Example Crafts"
+
+    # And the reverse scan order must NOT downgrade it again
+    data2 = {
+        "etsy_delivering": 1,
+        "etsy_carrier_tracking": {"R1": "C1"},
+        "etsy_merchant_names": {"R1": "Etsy"},
+    }
+    tracking_details2 = {
+        "etsy_delivering": ["R1"],
+        "fedex_delivering": ["C1"],
+    }
+    MailDataUpdateCoordinator._dedupe_marketplace_duplicates(
+        data2, tracking_details2, merchant_names
+    )
+    assert merchant_names["fedex"]["C1"] == "Example Crafts"

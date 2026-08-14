@@ -49,6 +49,7 @@ from .const import (
 )
 from .helpers import copy_images
 from .shippers import get_shipper_for_sensor
+from .shippers.generic import merge_merchant_names
 from .utils.cache import EmailCache
 from .utils.image import default_image_path, hash_file, image_file_name
 from .utils.imap import InvalidAuth, login, logout, selectfolder
@@ -89,6 +90,10 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
         self._file_mtime_cache = {}
         self._hash_cache = {}
         self._in_transit_tracking: dict[str, dict[str, str]] = {}
+        # Per-prefix merchant attribution: {prefix: {tracking_id: merchant}}.
+        # Fed by marketplace shippers, re-keyed to carrier prefixes on dedup;
+        # in-memory like _in_transit_tracking, pruned in _attach_merchant_names.
+        self._merchant_names: dict[str, dict[str, str]] = {}
         self._mail_delivered_latch_date: str | None = None
         self._mail_delivered_latched = False
         self.email_cache = EmailCache(hass=hass)
@@ -231,8 +236,11 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
             )
             tracking_details = shipper_data.pop("_tracking_details", {})
             data.update(shipper_data)
-            self._dedupe_marketplace_duplicates(data, tracking_details)
+            self._dedupe_marketplace_duplicates(
+                data, tracking_details, self._merchant_names
+            )
             self._apply_tracking_state(data, tracking_details, today_iso)
+            self._attach_merchant_names(data)
             self._latch_mail_delivered(data, today_iso)
 
             # Aggregate global transit and delivered sensors
@@ -399,6 +407,7 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
     def _dedupe_marketplace_duplicates(
         data: dict,
         tracking_details: dict[str, list],
+        merchant_names: dict[str, dict[str, str]] | None = None,
     ) -> None:
         """Drop marketplace packages already counted by a carrier shipper.
 
@@ -408,13 +417,23 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
         be counted twice; the carrier entry is treated as authoritative and
         the marketplace entry is removed from counts and tracking lists.
         Users without carrier notifications enabled are unaffected.
+
+        Merchant attribution survives the drop: when a marketplace entry is
+        removed, its merchant is re-keyed in merchant_names under the
+        carrier's prefix and tracking number (the carrier notification only
+        names the platform — e.g. "SHOPIFY, INC." — never the store).
+        Surviving marketplace entries keep theirs under the marketplace
+        prefix and order id.
         """
         marketplace_prefixes = tuple(const.MARKETPLACE_CARRIER_TRACKING)
         if not marketplace_prefixes:
             return
 
+        # Carrier tracking number -> (carrier prefix, number exactly as the
+        # carrier sensor reports it) so merchant maps join on the carrier's
+        # own casing.
         carrier_numbers = {
-            str(num).upper()
+            str(num).upper(): ("_".join(sensor.split("_")[:-1]), str(num))
             for sensor, ids in tracking_details.items()
             if not sensor.startswith(marketplace_prefixes)
             for num in ids or []
@@ -422,10 +441,29 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
 
         for prefix in marketplace_prefixes:
             mapping = data.pop(f"{prefix}_carrier_tracking", None) or {}
+            merchants = data.pop(f"{prefix}_merchant_names", None) or {}
+            if merchant_names is not None and merchants:
+                # Quality-aware merges throughout: the delivering email often
+                # only yields the platform fallback ("Etsy") while the
+                # delivered email days later yields the actual shop name —
+                # later, better names must be able to replace the fallback,
+                # and the fallback must never replace a real name.
+                merchant_names[prefix] = merge_merchant_names(
+                    prefix, merchant_names.get(prefix, {}), merchants
+                )
             for marketplace_id, carrier_num in mapping.items():
-                if str(carrier_num).upper() in carrier_numbers:
-                    MailDataUpdateCoordinator._remove_marketplace_package(
-                        data, tracking_details, prefix, marketplace_id, carrier_num
+                carrier = carrier_numbers.get(str(carrier_num).upper())
+                if carrier is None:
+                    continue
+                MailDataUpdateCoordinator._remove_marketplace_package(
+                    data, tracking_details, prefix, marketplace_id, carrier_num
+                )
+                if merchant_names is not None and marketplace_id in merchants:
+                    carrier_prefix, carrier_id = carrier
+                    merchant_names[carrier_prefix] = merge_merchant_names(
+                        prefix,
+                        merchant_names.get(carrier_prefix, {}),
+                        {carrier_id: merchants[marketplace_id]},
                     )
 
     @staticmethod
@@ -531,6 +569,42 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
                     data[f"{prefix}_packages"] = len(in_transit) + (
                         delivered_count if isinstance(delivered_count, int) else 0
                     )
+
+    def _attach_merchant_names(self, data: dict) -> None:
+        """Attach {tracking_id: merchant} maps beside exposed tracking lists.
+
+        For each tracking-list key a sensor exposes (see PackagesSensor's
+        _tracking_key derivation), a sibling "<key>_merchants" map is written
+        filtered to the ids in that list, so the merchant attribute can never
+        reference a tracking number the sensor does not expose. Keeping
+        "tracking" in the key also inherits the diagnostics redaction rule.
+
+        Ids no longer exposed anywhere for a prefix and no longer in transit
+        are pruned so the store cannot grow without bound.
+        """
+        for prefix, store in list(self._merchant_names.items()):
+            if not store:
+                del self._merchant_names[prefix]
+                continue
+            exposed: set[str] = set()
+            for key in (
+                f"{prefix}_tracking",
+                f"{prefix}_delivered_tracking",
+                f"{prefix}_packages_tracking",
+            ):
+                ids = data.get(key)
+                if not isinstance(ids, list):
+                    continue
+                exposed.update(ids)
+                merchants = {tid: store[tid] for tid in ids if tid in store}
+                if merchants:
+                    data[f"{key}_merchants"] = merchants
+            # Ids still in transit may be absent from this scan's lists but
+            # will reappear (the state machine holds them); keep those too.
+            keep = exposed | set(self._in_transit_tracking.get(prefix, {}))
+            self._merchant_names[prefix] = {
+                tid: name for tid, name in store.items() if tid in keep
+            }
 
     def _latch_mail_delivered(self, data: dict, today_iso: str) -> None:
         """Latch usps_mail_delivered on for the rest of the day once seen.

@@ -34,6 +34,7 @@ from .const import (
     ATTR_IMAGE,
     ATTR_IMAGE_NAME,
     ATTR_IMAGE_PATH,
+    ATTR_MERCHANT,
     ATTR_ORDER,
     ATTR_SUBJECT,
     ATTR_TRACKING_NUM,
@@ -110,6 +111,9 @@ class PackagesSensor(CoordinatorEntity, RestoreSensor):
                 self._tracking_key = f"{prefix}_tracking"
         else:
             self._tracking_key = f"{self.type}_tracking"
+        # The coordinator writes merchant attribution as a sibling of every
+        # tracking-list key, so one derivation covers all sensor classes.
+        self._merchant_key = f"{self._tracking_key}_merchants"
 
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added to hass."""
@@ -177,6 +181,13 @@ class PackagesSensor(CoordinatorEntity, RestoreSensor):
         ):
             if tracking := data.get(self._tracking_key):
                 attr[ATTR_TRACKING_NUM] = tracking
+                merchants = data.get(self._merchant_key) or {}
+                # Filtered to the exposed tracking list so the two attributes
+                # cannot disagree.
+                if known := {
+                    tid: merchants[tid] for tid in tracking if tid in merchants
+                }:
+                    attr[ATTR_MERCHANT] = known
 
         if "Amazon" in self._name:
             self._add_amazon_attributes(attr, data)

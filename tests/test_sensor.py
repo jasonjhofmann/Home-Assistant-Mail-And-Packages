@@ -511,3 +511,37 @@ async def test_image_path_sensor_state_retention(hass):
     # Simulate next update having no new usps_image data
     coordinator.data = {"image_path": "images/"}
     assert sensor.native_value == expected
+
+
+@pytest.mark.asyncio
+async def test_packages_sensor_merchant_attribute(hass):
+    """Merchant attribution is exposed beside the tracking numbers."""
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "test"})
+    coordinator = MagicMock()
+    coordinator.data = {
+        "ups_tracking": ["1Z999AA10123456784", "1Z999AA10123456999"],
+        "ups_tracking_merchants": {"1Z999AA10123456784": "Example Outfitters"},
+    }
+    sensor_desc = MagicMock(key="ups_delivering")
+    sensor_desc.name = "Mail UPS Delivering"
+    sensor = PackagesSensor(entry, sensor_desc, coordinator)
+
+    attrs = sensor.extra_state_attributes
+    assert attrs["tracking_#"] == ["1Z999AA10123456784", "1Z999AA10123456999"]
+    # Only tracking numbers with known attribution appear in the map
+    assert attrs["merchant"] == {"1Z999AA10123456784": "Example Outfitters"}
+
+    # Without a merchant map the attribute is omitted entirely
+    coordinator.data = {"ups_tracking": ["1Z999AA10123456784"]}
+    assert "merchant" not in sensor.extra_state_attributes
+
+    # IMAP-backed marketplace packages sensors read their own sibling key
+    shopify_desc = MagicMock(key="shopify_packages")
+    shopify_desc.name = "Mail Shopify Packages"
+    shopify = PackagesSensor(entry, shopify_desc, coordinator)
+    coordinator.data = {
+        "shopify_packages_tracking": ["PP3024"],
+        "shopify_packages_tracking_merchants": {"PP3024": "Example Store"},
+    }
+    attrs = shopify.extra_state_attributes
+    assert attrs["merchant"] == {"PP3024": "Example Store"}

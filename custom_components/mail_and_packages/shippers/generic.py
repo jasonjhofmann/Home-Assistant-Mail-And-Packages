@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import email
+import html
 import logging
 import re
 from email.header import decode_header
+from email.utils import parseaddr
 from pathlib import Path
 from shutil import copyfile
 from typing import Any
@@ -27,6 +29,7 @@ from custom_components.mail_and_packages.const import (
     CAMERA_EXTRACTION_CONFIG,
     CONF_FORWARDING_HEADER,
     MARKETPLACE_CARRIER_TRACKING,
+    MARKETPLACE_MERCHANT_PATTERNS,
     SENSOR_DATA,
 )
 from custom_components.mail_and_packages.utils.cache import EmailCache
@@ -62,6 +65,143 @@ def _find_carrier_number(msg_parts: list, carrier_re: re.Pattern) -> str | None:
             if found := carrier_re.search(text):
                 return found.group(1)
     return None
+
+
+# Merchant names are user-visible attribute values extracted from arbitrary
+# email content; cap them so a mis-anchored match can never bloat attributes.
+MAX_MERCHANT_LENGTH = 80
+
+
+def _decode_header_value(value: str) -> str:
+    """Decode RFC 2047 encoded-words in a header value to a plain string.
+
+    Real mail carries MIME-legal charset labels that are not Python codecs
+    (unknown-8bit, x-user-defined, RFC 2231 language-tagged forms), which
+    raise LookupError from bytes.decode regardless of errors="replace" —
+    fall back to utf-8 for those parts rather than letting one bad header
+    abort the whole shipper batch.
+    """
+    decoded = []
+    for part, charset in decode_header(value):
+        if isinstance(part, bytes):
+            try:
+                decoded.append(part.decode(charset or "utf-8", "replace"))
+            except (LookupError, UnicodeError):
+                decoded.append(part.decode("utf-8", "replace"))
+        else:
+            decoded.append(part)
+    return "".join(decoded)
+
+
+def _clean_merchant_name(name: str) -> str | None:
+    """Normalize an extracted merchant name for use as an attribute value.
+
+    Body extractions can capture HTML fragments and entities; display names
+    can carry quotes and stray whitespace. Strip tags, unescape entities,
+    collapse whitespace, and cap the length.
+    """
+    name = re.sub(r"<[^>]+>", " ", name)
+    name = html.unescape(name)
+    name = " ".join(name.split()).strip('"').strip()
+    if not name:
+        return None
+    return name[:MAX_MERCHANT_LENGTH].rstrip()
+
+
+def merchant_is_generic(prefix: str, name: str) -> bool:
+    """Return True when name is just the platform/shipper fallback.
+
+    "Etsy" (the platform's own display name / the title-cased prefix)
+    carries no store-level information — a pattern-extracted shop name
+    should be allowed to replace it wherever merchant maps merge.
+    """
+    return name.strip().lower() == prefix.replace("_", " ").lower()
+
+
+def merge_merchant_names(
+    prefix: str, base: dict[str, str], extra: dict[str, str]
+) -> dict[str, str]:
+    """Merge merchant maps, never downgrading a store name to the fallback.
+
+    A marketplace's delivering email often only yields the platform name
+    (e.g. "Etsy") while the delivered email yields the actual shop via
+    MARKETPLACE_MERCHANT_PATTERNS; both key by the same order id, so a
+    blind last-writer-wins merge would let whichever sensor processed
+    later clobber the better name.
+    """
+    merged = dict(base)
+    for tid, name in extra.items():
+        current = merged.get(tid)
+        if current is None or (
+            merchant_is_generic(prefix, current)
+            and not merchant_is_generic(prefix, name)
+        ):
+            merged[tid] = name
+    return merged
+
+
+def _sender_display_name(msg: email.message.Message) -> str | None:
+    """Return the decoded From display name, or None if the header has none."""
+    raw = msg.get("From")
+    if not raw:
+        return None
+    # parseaddr before decoding: encoded-words never contain the "<" or ","
+    # separators parseaddr keys on, while the decoded name might.
+    name, _ = parseaddr(raw)
+    if not name:
+        return None
+    return _clean_merchant_name(_decode_header_value(name))
+
+
+def _match_merchant_pattern(
+    msg: email.message.Message, merchant_re: re.Pattern
+) -> str | None:
+    """Run the marketplace merchant regex over the subject, then text parts.
+
+    Body parts are tag-stripped and entity-unescaped BEFORE matching so the
+    capture is the visible shop name, not surrounding markup.
+    """
+    subject = _decode_header_value(msg.get("Subject", ""))
+    if found := merchant_re.search(subject):
+        if cleaned := _clean_merchant_name(found.group(1)):
+            return cleaned
+    for part in msg.walk():
+        if part.get_content_type() not in ("text/plain", "text/html"):
+            continue
+        charset = part.get_content_charset() or "utf-8"
+        try:
+            text = part.get_payload(decode=True).decode(charset, "replace")
+        except (AttributeError, ValueError, LookupError):
+            continue
+        # Match against the rendered text, not raw markup (no length cap
+        # here — only the extracted capture gets cleaned/capped).
+        plain = " ".join(html.unescape(re.sub(r"<[^>]+>", " ", text)).split())
+        if found := merchant_re.search(plain):
+            if cleaned := _clean_merchant_name(found.group(1)):
+                return cleaned
+    return None
+
+
+def _find_merchant_name(msg_parts: list, prefix: str) -> str | None:
+    """Extract the merchant/store name from a marketplace email.
+
+    Tries the marketplace's MARKETPLACE_MERCHANT_PATTERNS regex against the
+    subject and text parts first, then falls back to the From display name.
+    Returns None when nothing yields a name (caller applies the final
+    shipper-name fallback).
+    """
+    pattern = MARKETPLACE_MERCHANT_PATTERNS.get(prefix)
+    merchant_re = re.compile(pattern) if pattern else None
+    display = None
+    for response_part in msg_parts:
+        if not isinstance(response_part, (bytes, bytearray)):
+            continue
+        msg = email.message_from_bytes(response_part)
+        if merchant_re and (name := _match_merchant_pattern(msg, merchant_re)):
+            return name
+        if display is None:
+            display = _sender_display_name(msg)
+    return display
 
 
 class GenericShipper(Shipper):
@@ -260,6 +400,12 @@ class GenericShipper(Shipper):
             for key, value in list(sensor_res.items()):
                 if key.endswith("_carrier_tracking") and isinstance(res.get(key), dict):
                     sensor_res[key] = {**res[key], **value}
+                elif key.endswith("_merchant_names") and isinstance(res.get(key), dict):
+                    # Quality-aware merge: a sensor processed later must not
+                    # downgrade a pattern-extracted store name to the
+                    # platform fallback (both key by the same order id).
+                    prefix = key[: -len("_merchant_names")]
+                    sensor_res[key] = merge_merchant_names(prefix, res[key], value)
             res.update(sensor_res)
             # Expose per-sensor raw tracking for coordinator state management.
             # Keyed as "_tracking_details" to distinguish from the public data dict.
@@ -649,11 +795,20 @@ class GenericShipper(Shipper):
         account: IMAP4_SSL,
         cache: EmailCache | None = None,
     ) -> dict[str, dict]:
-        """Map marketplace tracking id -> embedded carrier tracking number.
+        """Map marketplace tracking id -> carrier tracking number and merchant.
 
         Only runs for shippers listed in MARKETPLACE_CARRIER_TRACKING.
         Fetches are served by the email cache, so this adds no extra IMAP
         round-trips beyond what tracking extraction already required.
+
+        Returns up to two transient keys the coordinator consumes:
+        - "{prefix}_carrier_tracking": {marketplace_id: carrier_number} for
+          de-duplication against carrier shippers.
+        - "{prefix}_merchant_names": {marketplace_id: merchant} so packages
+          keep their store attribution — on the marketplace sensors, and on
+          the carrier sensors when de-duplication hands the package over to a
+          carrier (whose notification only names the platform, e.g.
+          "SHOPIFY, INC.", never the store).
         """
         prefix = "_".join(sensor_type.split("_")[:-1])
         pattern = MARKETPLACE_CARRIER_TRACKING.get(prefix)
@@ -669,6 +824,9 @@ class GenericShipper(Shipper):
         carrier_re = re.compile(pattern, re.IGNORECASE)
         id_pattern = SENSOR_DATA[tracking_key][ATTR_PATTERN][0]
         mapping: dict[str, str] = {}
+        merchants: dict[str, str] = {}
+        # Last-resort merchant attribution: the shipper's own name.
+        fallback_merchant = prefix.replace("_", " ").title()
         for sdata in found_data:
             for eid in sdata.split():
                 tracking = await get_tracking(
@@ -685,9 +843,17 @@ class GenericShipper(Shipper):
                     msg_parts = (await email_fetch(account, eid, "(RFC822)"))[1]
                 if number := _find_carrier_number(msg_parts, carrier_re):
                     mapping.setdefault(tracking[0], number)
-        if not mapping:
-            return {}
-        return {f"{prefix}_carrier_tracking": mapping}
+                merchant = _find_merchant_name(msg_parts, prefix)
+                merchants = merge_merchant_names(
+                    prefix, merchants, {tracking[0]: merchant or fallback_merchant}
+                )
+
+        result: dict[str, dict] = {}
+        if mapping:
+            result[f"{prefix}_carrier_tracking"] = mapping
+        if merchants:
+            result[f"{prefix}_merchant_names"] = merchants
+        return result
 
     async def _setup_image_extraction(
         self,

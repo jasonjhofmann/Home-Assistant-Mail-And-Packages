@@ -129,6 +129,8 @@ async def test_home_depot_shipped(hass):
     assert result[ATTR_COUNT] == 1
     assert result[ATTR_TRACKING] == ["WK00000000"]
     assert result["home_depot_carrier_tracking"] == {"WK00000000": "123456789012"}
+    # Merchant attribution falls back to the From display name
+    assert result["home_depot_merchant_names"] == {"WK00000000": "The Home Depot"}
 
 
 @pytest.mark.asyncio
@@ -173,4 +175,9 @@ async def test_home_depot_marketplace_carrier_tracking(hass):
             mock_account,
         )
 
-    assert mapping == {"home_depot_carrier_tracking": {"WK00000000": "123456789012"}}
+    # The unpatched fetch yields no parsable message parts here, so merchant
+    # attribution falls back to the title-cased shipper prefix.
+    assert mapping == {
+        "home_depot_carrier_tracking": {"WK00000000": "123456789012"},
+        "home_depot_merchant_names": {"WK00000000": "Home Depot"},
+    }

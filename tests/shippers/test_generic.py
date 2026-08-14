@@ -1,5 +1,6 @@
 """Tests for generic shipper utilities."""
 
+import email
 import re
 import threading
 from pathlib import Path
@@ -1878,7 +1879,12 @@ async def test_collect_carrier_tracking_with_cache_and_empty_tracking(hass):
             "etsy_delivering", [b"1 2"], mock_account, cache=mock_cache
         )
 
-    assert res == {"etsy_carrier_tracking": {"3869977574": "9999888877776666"}}
+    # The dummy content has no From header or shop-name text, so merchant
+    # attribution falls back to the title-cased shipper prefix.
+    assert res == {
+        "etsy_carrier_tracking": {"3869977574": "9999888877776666"},
+        "etsy_merchant_names": {"3869977574": "Etsy"},
+    }
     mock_cache.fetch.assert_called_once_with(b"2", "(RFC822)")
 
 
@@ -1926,6 +1932,202 @@ async def test_shopify_no_carrier_tracking_is_noop(hass, mock_imap):
     result = await shipper.process(mock_imap, "today", "shopify_packages")
     assert result[ATTR_COUNT] == 1
     assert "shopify_carrier_tracking" not in result
+
+
+@pytest.mark.asyncio
+async def test_shopify_merchant_names_extraction(hass, mock_imap_shopify_on_the_way):
+    """The store name is attributed from the Shopify email's From display name."""
+    shipper = GenericShipper(hass, {"image_path": "test/path/"})
+    result = await shipper.process(
+        mock_imap_shopify_on_the_way, "today", "shopify_packages"
+    )
+    assert result["shopify_merchant_names"] == {"MC1605": "Example Store"}
+
+
+def test_find_merchant_name_etsy_subject():
+    """The Etsy pattern extracts the shop name from the delivered subject."""
+    msg = (
+        b"From: Etsy <no-reply@account.etsy.com>\r\n"
+        b"Subject: It's here! Your order from Example Crafts has been delivered.\r\n"
+        b"\r\n"
+        b"body"
+    )
+    assert generic._find_merchant_name([msg], "etsy") == "Example Crafts"
+
+
+def test_find_merchant_name_display_name_fallback():
+    """Without a marketplace-pattern match, the From display name is used."""
+    msg = (
+        b"From: Etsy <no-reply@account.etsy.com>\r\n"
+        b"Subject: Your Etsy order is on the way (Receipt #123456789)\r\n"
+        b"\r\n"
+        b"body"
+    )
+    assert generic._find_merchant_name([msg], "etsy") == "Etsy"
+
+
+def test_find_merchant_name_none_without_display_name():
+    """No pattern match and a bare From address yields None."""
+    msg = b"From: no-reply@example.com\r\nSubject: hi\r\n\r\nbody"
+    assert generic._find_merchant_name([msg], "shopify") is None
+
+
+def test_sender_display_name_decodes_encoded_words():
+    """RFC 2047 encoded display names are decoded to plain text."""
+    msg = email.message_from_bytes(
+        b"From: =?utf-8?q?Caf=C3=A9_Example?= <orders@example.com>\r\n\r\n"
+    )
+    assert generic._sender_display_name(msg) == "Café Example"
+
+
+def test_decode_header_value_unknown_charset_does_not_raise():
+    """MIME-legal charsets that are not Python codecs must not abort the scan.
+
+    Real mail carries unknown-8bit / x-user-defined labels; bytes.decode
+    raises LookupError for them regardless of errors="replace".
+    """
+    msg = (
+        b"From: =?unknown-8bit?q?Some_Store?= <store@t.shopifyemail.com>\r\n"
+        b"Subject: =?x-user-defined?q?A_shipment?=\r\n"
+        b"\r\n"
+        b"body"
+    )
+    assert generic._find_merchant_name([msg], "shopify") == "Some Store"
+
+
+def test_find_merchant_name_body_html_sanitized():
+    """Body-fallback extraction strips markup and unescapes entities.
+
+    The shop name can be wrapped in an anchor tag when the subject variant
+    lacks the pattern phrase; the capture must be the visible name, never
+    raw HTML.
+    """
+    msg = (
+        b"From: Etsy <no-reply@account.etsy.com>\r\n"
+        b"Subject: Great news about your delivery\r\n"
+        b"Content-Type: text/html; charset=UTF-8\r\n"
+        b"\r\n"
+        b'<p>Your order from <a href="https://etsy.com/shop/x?ref=abc">'
+        b"Sarah&#39;s Shop</a> has been delivered.</p>"
+    )
+    assert generic._find_merchant_name([msg], "etsy") == "Sarah's Shop"
+
+
+def test_find_merchant_name_body_honors_charset():
+    """Body decoding honors the part's declared charset, not blind utf-8."""
+    msg = (
+        b"From: Etsy <no-reply@account.etsy.com>\r\n"
+        b"Subject: Great news about your delivery\r\n"
+        b"Content-Type: text/plain; charset=iso-8859-1\r\n"
+        b"\r\n"
+        b"Your order from Caf\xe9 Rouge has been delivered."
+    )
+    assert generic._find_merchant_name([msg], "etsy") == "Café Rouge"
+
+
+def test_find_merchant_name_skips_unusable_parts():
+    """Non-bytes entries, non-text parts, and undecodable parts are skipped."""
+    msg = (
+        b"From: Example Store <store@t.shopifyemail.com>\r\n"
+        b"MIME-Version: 1.0\r\n"
+        b'Content-Type: multipart/mixed; boundary="XX"\r\n'
+        b"\r\n"
+        b"--XX\r\n"
+        b"Content-Type: application/octet-stream\r\n"
+        b"\r\n"
+        b"binary\r\n"
+        b"--XX\r\n"
+        b"Content-Type: text/plain; charset=bogus-charset\r\n"
+        b"\r\n"
+        b"undecodable part\r\n"
+        b"--XX--\r\n"
+    )
+    # 123 exercises the non-bytes skip; etsy has a pattern so parts are walked
+    assert generic._find_merchant_name([123, msg], "etsy") == "Example Store"
+
+
+def test_clean_merchant_name_caps_length():
+    """Extracted names are length-capped so attributes cannot bloat."""
+    long_name = "A" * 200
+    cleaned = generic._clean_merchant_name(long_name)
+    assert cleaned == "A" * generic.MAX_MERCHANT_LENGTH
+    assert generic._clean_merchant_name("   ") is None
+
+
+@pytest.mark.parametrize(
+    ("prefix", "name", "expected"),
+    [
+        ("etsy", "Etsy", True),
+        ("etsy", " etsy ", True),
+        ("etsy", "Example Crafts", False),
+        ("home_depot", "Home Depot", True),
+        ("home_depot", "The Home Depot", False),
+    ],
+)
+def test_merchant_is_generic(prefix, name, expected):
+    """The platform fallback is recognized regardless of case/whitespace."""
+    assert generic.merchant_is_generic(prefix, name) is expected
+
+
+def test_merge_merchant_names_never_downgrades():
+    """A store name survives merges; the platform fallback can only fill gaps."""
+    base = {"111": "Example Crafts", "222": "Etsy"}
+    extra = {"111": "Etsy", "222": "Another Shop", "333": "Etsy"}
+    merged = generic.merge_merchant_names("etsy", base, extra)
+    assert merged == {
+        "111": "Example Crafts",  # not downgraded to the fallback
+        "222": "Another Shop",  # upgraded from the fallback
+        "333": "Etsy",  # fallback fills a gap
+    }
+
+
+@pytest.mark.parametrize(
+    ("sensors", "results"),
+    [
+        (
+            ["etsy_delivered", "etsy_delivering"],
+            [
+                {
+                    "count": 1,
+                    "tracking": ["111"],
+                    "etsy_merchant_names": {"111": "Example Crafts"},
+                },
+                {
+                    "count": 1,
+                    "tracking": ["111"],
+                    "etsy_merchant_names": {"111": "Etsy"},
+                },
+            ],
+        ),
+        (
+            ["etsy_delivering", "etsy_delivered"],
+            [
+                {
+                    "count": 1,
+                    "tracking": ["111"],
+                    "etsy_merchant_names": {"111": "Etsy"},
+                },
+                {
+                    "count": 1,
+                    "tracking": ["111"],
+                    "etsy_merchant_names": {"111": "Example Crafts"},
+                },
+            ],
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_process_batch_merchant_merge_prefers_store_name(hass, sensors, results):
+    """Batch order must not decide whether the real store name survives.
+
+    The delivering email only yields the platform fallback while the
+    delivered email yields the shop via the merchant pattern; both key by
+    the same order id.
+    """
+    shipper = GenericShipper(hass, {})
+    with patch.object(GenericShipper, "process", AsyncMock(side_effect=results)):
+        res = await shipper.process_batch(AsyncMock(), "today", sensors, None)
+    assert res["etsy_merchant_names"] == {"111": "Example Crafts"}
 
 
 def test_danish_carrier_patterns():

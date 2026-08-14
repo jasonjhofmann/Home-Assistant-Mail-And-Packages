@@ -31,6 +31,7 @@ ATTR_GRID_IMAGE_NAME = "grid_image"
 ATTR_ORDER = "order"
 ATTR_TRACKING = "tracking"
 ATTR_TRACKING_NUM = "tracking_#"
+ATTR_MERCHANT = "merchant"
 ATTR_IMAGE = "image"
 ATTR_IMAGE_PATH = "image_path"
 ATTR_SERVER = "server"
@@ -2301,6 +2302,17 @@ MARKETPLACE_CARRIER_TRACKING = {
     "etsy": r"tracking number:?\s*#?([A-Za-z0-9]{8,34})",
     "shopify": r"tracking number:?\s*#?([A-Za-z0-9]{8,34})",
     "home_depot": r"Tracking ID:?\s*#?([A-Za-z0-9]{8,34})",
+}
+
+# Optional per-marketplace regexes extracting the merchant/store name from the
+# email subject or body (group 1 = the name). Tried before the From display
+# name — needed when a platform sends on behalf of its sellers from its own
+# identity (e.g. Etsy), where the display name would attribute every package
+# to the platform instead of the seller. Marketplaces without an entry fall
+# back to the From display name (Shopify stores set it to the store name),
+# then to the title-cased shipper prefix.
+MARKETPLACE_MERCHANT_PATTERNS = {
+    "etsy": r"[Yy]our order from (.+?) has been delivered",
 }
 
 # For sensors with delivering and delivered statuses
