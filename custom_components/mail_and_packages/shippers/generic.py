@@ -22,11 +22,14 @@ from custom_components.mail_and_packages.const import (
     ATTR_EMAIL,
     ATTR_PATTERN,
     ATTR_SUBJECT,
+    ATTR_SUBJECT_ALL,
     ATTR_TRACKING,
     CAMERA_DATA,
     CAMERA_EXTRACTION_CONFIG,
     CONF_FORWARDING_HEADER,
     MARKETPLACE_CARRIER_TRACKING,
+    REPLY_SUBJECT_PREFIXES,
+    SENDER_SCOPE_OPTIONS,
     SENSOR_DATA,
 )
 from custom_components.mail_and_packages.utils.cache import EmailCache
@@ -99,6 +102,7 @@ class GenericShipper(Shipper):
         config = SENSOR_DATA[sensor_type]
         email_addresses = config.get(ATTR_EMAIL, [])
         subjects = config.get(ATTR_SUBJECT, [])
+        required_subjects = config.get(ATTR_SUBJECT_ALL, [])
 
         # _packages sensors with no email/subject are computed in process_batch
         # as delivering + delivered; skip IMAP search here.
@@ -109,6 +113,7 @@ class GenericShipper(Shipper):
             )
             return {ATTR_COUNT: 0, ATTR_TRACKING: []}
 
+        email_addresses = self._resolve_sender_scope(sensor_type, email_addresses)
         forwarding_header, email_addresses = self._resolve_forwarding(email_addresses)
 
         # _delivering/_exception/_packages use the extended window so in-transit
@@ -133,7 +138,10 @@ class GenericShipper(Shipper):
 
         # Skip email search for sensors with no email addresses configured
         # (e.g. *_packages sensors that are empty dicts in SENSOR_DATA)
-        if not email_addresses:
+        # Template-matched shippers legitimately have no senders to search on,
+        # so only bail when there is no subject criterion either — a search
+        # carrying nothing but a date would match the entire mailbox.
+        if not email_addresses and not subjects and not required_subjects:
             _LOGGER.debug(
                 "Skipping email search for %s: no email addresses configured",
                 sensor_type,
@@ -210,6 +218,34 @@ class GenericShipper(Shipper):
                 await self._copy_generic_placeholder(shipper_cfg)
 
         return result
+
+    def _resolve_sender_scope(
+        self, sensor_type: str, email_addresses: list[str]
+    ) -> list[str]:
+        """Apply the user's optional sender scope for template-matched shippers.
+
+        Template-matched shippers (see SENDER_SCOPE_OPTIONS) carry no built-in
+        sender list, because each store sends from its own domain. By default
+        they match every store using the template; when the user supplies a
+        sender scope, matching is narrowed to those senders. IMAP FROM
+        matching is substring-based, so entries may be full addresses or bare
+        domains. Shippers without a scope option are returned untouched.
+        """
+        prefix = "_".join(sensor_type.split("_")[:-1])
+        option = SENDER_SCOPE_OPTIONS.get(prefix)
+        if not option:
+            return email_addresses
+        scope = self.config.get(option, [])
+        if isinstance(scope, str):
+            scope = (
+                []
+                if scope == "(none)"
+                else [e.strip() for e in scope.split(",") if e.strip()]
+            )
+        if not scope:
+            return email_addresses
+        # Preserve order and drop duplicates in case a sender is entered twice.
+        return list(dict.fromkeys([*email_addresses, *scope]))
 
     def _resolve_forwarding(self, email_addresses: list[str]) -> tuple[str, list[str]]:
         """Return (forwarding_header, resolved_email_addresses).
@@ -461,6 +497,7 @@ class GenericShipper(Shipper):
             subject=subjects,
             body=config.get(ATTR_BODY, ""),
             header=forwarding_header,
+            subject_all=config.get(ATTR_SUBJECT_ALL, []),
         )
 
         if server_response == "OK" and sdata[0]:
@@ -514,6 +551,40 @@ class GenericShipper(Shipper):
             return subject_bytes.decode("utf-8", "ignore").strip()
         return str(subject_bytes).strip()
 
+    @staticmethod
+    def _is_reply_subject(subject: str) -> bool:
+        """Return True if the subject is a reply to a notification.
+
+        A reply quotes the original subject verbatim, so it satisfies every
+        subject rule the notification itself does; without this check a
+        customer-service thread is counted as a package. Forwards are NOT
+        treated this way — forwarding shipping mail into the scanned mailbox
+        is a supported setup.
+        """
+        return subject.lstrip().lower().startswith(REPLY_SUBJECT_PREFIXES)
+
+    @classmethod
+    def _subject_qualifies(
+        cls,
+        subject: str,
+        expected_lower: list[str],
+        required_lower: list[str],
+    ) -> bool:
+        """Return True if a subject satisfies the sensor's subject rules.
+
+        Qualifies when the subject contains ANY expected term (or none are
+        configured) AND every required term, and is not a reply.
+        """
+        if cls._is_reply_subject(subject):
+            return False
+        subject_lower = subject.lower()
+        matches_any = not expected_lower or any(
+            expected in subject_lower for expected in expected_lower
+        )
+        return matches_any and all(
+            required in subject_lower for required in required_lower
+        )
+
     async def _verify_matched_subjects(
         self,
         account: IMAP4_SSL,
@@ -522,12 +593,18 @@ class GenericShipper(Shipper):
         expected_subjects: list[str],
         cache: EmailCache | None = None,
     ) -> list[bytes]:
-        """Verify the subject of each matched email locally and log for debugging."""
-        if not expected_subjects:
+        """Verify the subject of each matched email locally and log for debugging.
+
+        An email qualifies when its subject contains ANY of expected_subjects
+        and ALL of the sensor's ATTR_SUBJECT_ALL terms, and is not a reply.
+        """
+        required_subjects = SENSOR_DATA.get(sensor_type, {}).get(ATTR_SUBJECT_ALL, [])
+        if not expected_subjects and not required_subjects:
             return email_ids
 
         verified_ids = []
         expected_subjects_lower = [s.lower() for s in expected_subjects]
+        required_subjects_lower = [s.lower() for s in required_subjects]
 
         for eid in email_ids:
             try:
@@ -555,10 +632,8 @@ class GenericShipper(Shipper):
                             eid.decode() if isinstance(eid, bytes) else eid,
                             subject,
                         )
-                        subject_lower = subject.lower()
-                        if any(
-                            expected in subject_lower
-                            for expected in expected_subjects_lower
+                        if self._subject_qualifies(
+                            subject, expected_subjects_lower, required_subjects_lower
                         ):
                             subject_found = True
 

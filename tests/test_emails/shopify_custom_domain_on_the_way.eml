@@ -1,0 +1,31 @@
+Delivered-To: redacted@gmail.com
+Received: from mail.exampleoutfitters.com (mail.exampleoutfitters.com. [192.0.2.82])
+        by mx.google.com with ESMTPS id shopify789def012
+        for <redacted@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 23 Sep 2025 09:12:44 -0700 (PDT)
+Return-Path: <orders@exampleoutfitters.com>
+From: Example Outfitters <orders@exampleoutfitters.com>
+To: redacted@gmail.com
+Subject: A shipment from order EO-1042 is on the way
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Message-ID: <20250923161244.shopify.ontheway@exampleoutfitters.com>
+Date: Tue, 23 Sep 2025 16:12:44 +0000
+
+<!doctype html>
+<html>
+  <body>
+    <p>Order EO-1042</p>
+    <h1>Your order is on the way</h1>
+    <p>Your order is on the way. Track your shipment to see the delivery s=
+tatus.</p>
+    <a href=3D"https://exampleoutfitters.com/orders/track">View your order=
+</a> or <a href=3D"https://exampleoutfitters.com">Visit our store</a>
+    <p>UPS tracking number: 1Z999AA10123456784</p>
+    <p>Items in this shipment</p>
+    <p>Example Jacket x1</p>
+    <p>Ship to: John Doe, 123 Main St. Springfield</p>
+  </body>
+</html>

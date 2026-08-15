@@ -37,6 +37,10 @@ ATTR_SERVER = "server"
 ATTR_IMAGE_NAME = "image_name"
 ATTR_EMAIL = "email"
 ATTR_SUBJECT = "subject"
+# Subject terms that must ALL be present, in addition to any one ATTR_SUBJECT
+# term. Lets a shipper require its distinctive template phrase alongside the
+# per-sensor status phrase, so it can match without scoping to senders.
+ATTR_SUBJECT_ALL = "subject_all"
 ATTR_BODY = "body"
 ATTR_BODY_COUNT = "body_count"
 ATTR_PATTERN = "pattern"
@@ -87,6 +91,26 @@ CONF_FORWARDED_EMAILS = "forwarded_emails"
 CONF_FORWARDING_HEADER = "forwarding_header"
 CONF_CUSTOM_DAYS = "custom_days"
 CONF_USPS_PLACEHOLDER = "usps_placeholder"
+CONF_SHOPIFY_SENDERS = "shopify_senders"
+
+# Shippers that match on their message template rather than on a sender list,
+# and so accept an OPTIONAL user-supplied sender scope. Maps the shipper
+# prefix to the config key holding those senders. When the option is empty
+# (the default) the shipper matches every store using the template; when set
+# it is narrowed to just those senders. The narrowing is shared
+# (GenericShipper), so a future template-matched shipper adds one entry here
+# plus a config-flow field.
+SENDER_SCOPE_OPTIONS = {
+    "shopify": CONF_SHOPIFY_SENDERS,
+}
+
+# Reply prefixes that disqualify an otherwise-matching subject. A reply to a
+# shipping notification quotes its subject verbatim, so "Re: A shipment from
+# order #123 has been delivered" matches every subject rule the original
+# does — a support thread would be counted as a package. Forward prefixes are
+# deliberately NOT listed: forwarding mail into the scanned mailbox is a
+# first-class supported setup (see CONF_FORWARDED_EMAILS).
+REPLY_SUBJECT_PREFIXES = ("re:", "re :")
 
 # Defaults
 DEFAULT_CAMERA_NAME = "Mail USPS Camera"
@@ -139,6 +163,7 @@ DEFAULT_ALLOW_FORWARDED_EMAILS = False
 DEFAULT_FORWARDED_EMAILS = "(none)"
 DEFAULT_FORWARDING_HEADER = "(none)"
 DEFAULT_USPS_PLACEHOLDER = True
+DEFAULT_SHOPIFY_SENDERS = "(none)"
 
 # Amazon
 AMAZON_DOMAINS = [
@@ -1003,29 +1028,22 @@ SENSOR_DATA = {
         ],
     },
     "home_depot_tracking": {"pattern": [r"\bWK\d{8}\b"]},
-    # Shopify (standard order-notification templates). Sender varies per
-    # store; these cover Shopify's shared sending infrastructure. Stores
-    # sending from their own domain need their sender added here.
+    # Shopify (standard order-notification templates). The sender is the
+    # store's own, so there is no sender list to enumerate: match the
+    # template phrase instead ("A shipment from order <id> is on the way"),
+    # AND'd with the per-sensor status phrase. The optional shopify_senders
+    # option narrows this to specific stores (see SENDER_SCOPE_OPTIONS).
     "shopify_delivered": {
-        "email": [
-            "t.shopifyemail.com",
-            "no-reply@parcelpanel.net",
-        ],
         "subject": ["has been delivered"],
+        "subject_all": ["shipment from order"],
     },
     "shopify_delivering": {
-        "email": [
-            "t.shopifyemail.com",
-            "no-reply@parcelpanel.net",
-        ],
         "subject": ["is out for delivery"],
+        "subject_all": ["shipment from order"],
     },
     "shopify_packages": {
-        "email": [
-            "t.shopifyemail.com",
-            "no-reply@parcelpanel.net",
-        ],
         "subject": ["is on the way"],
+        "subject_all": ["shipment from order"],
     },
     "shopify_tracking": {
         "pattern": ["shipment from order #?([A-Za-z0-9()\\-]+)"],

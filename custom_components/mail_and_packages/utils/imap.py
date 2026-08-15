@@ -247,10 +247,21 @@ def build_search(  # noqa: C901
     body: str | list[str] = "",
     header: str = "",
     is_yahoo: bool = False,
+    subject_all: list[str] | None = None,
 ) -> tuple:
     """Build IMAP search query.
 
     Return tuple of utf8 flag and search query.
+
+    `subject` terms are OR'd (any one may match). `subject_all` terms are
+    AND'd and combined with the rest, which lets a shipper require a
+    distinctive template phrase in addition to a status phrase — e.g.
+    SUBJECT "shipment from order" SUBJECT "is on the way".
+
+    `address` may be empty when a subject/body criterion is present, so a
+    shipper can match on its message template alone rather than on a list
+    of senders. A query with no criterion other than the date would match
+    the whole mailbox and is rejected.
     Non-ASCII characters are stripped from subject to ensure compatibility
     with servers that only support US-ASCII charset (e.g. Microsoft Exchange).
     IMAP SUBJECT performs substring matching, so stripping non-ASCII chars
@@ -265,11 +276,14 @@ def build_search(  # noqa: C901
     """
     the_date = f"SINCE {date}"
 
-    if not address:
-        raise ValueError("address list must not be empty")
+    if not address and not subject and not body and not subject_all:
+        raise ValueError("search needs an address, subject, or body criterion")
 
     # Build the address/header clause
-    if header:
+    addr_clause = ""
+    if not address:
+        pass
+    elif header:
         # Each address matches via header (forwarded) OR FROM (direct), so
         # users with mixed setups (some carriers forwarded, others direct)
         # don't need separate configurations.
@@ -312,6 +326,12 @@ def build_search(  # noqa: C901
                 else f'{subject_prefix} SUBJECT "{subject_joined}"'
             )
 
+    # Terms that must ALL appear in the subject (AND'd by juxtaposition)
+    subject_all_part = ""
+    if subject_all:
+        safe_required = [clean_search_string(s) for s in subject_all]
+        subject_all_part = " ".join(f'SUBJECT "{s}"' for s in safe_required if s)
+
     # Handle multiple bodies
     body_part = ""
     if body:
@@ -330,17 +350,16 @@ def build_search(  # noqa: C901
                 else f'{body_prefix} BODY "{body_joined}"'
             )
 
+    criteria = [
+        part
+        for part in (addr_clause, subject_part, subject_all_part, body_part)
+        if part
+    ]
+    joined_criteria = " ".join(criteria)
     if is_yahoo:
-        if subject_part or body_part:
-            search_criteria = f"{subject_part} {body_part}".strip()
-            imap_search = f"({addr_clause} {search_criteria} {the_date})"
-        else:
-            imap_search = f"({addr_clause} {the_date})"
-    elif subject_part or body_part:
-        search_criteria = f"{subject_part} {body_part}".strip()
-        imap_search = f"{addr_clause} {search_criteria} {the_date}"
+        imap_search = f"({joined_criteria} {the_date})" if criteria else f"({the_date})"
     else:
-        imap_search = f"{addr_clause} {the_date}"
+        imap_search = f"{joined_criteria} {the_date}" if criteria else the_date
 
     _LOGGER.debug("DEBUG imap_search: %s", imap_search)
 
@@ -502,6 +521,7 @@ async def email_search(  # noqa: C901
     subject: str | list[str] = "",
     body: str | list[str] = "",
     header: str = "",
+    subject_all: list[str] | None = None,
 ) -> tuple:
     """Search emails with from/header, subject, and date asynchronously.
 
@@ -533,7 +553,13 @@ async def email_search(  # noqa: C901
     if len(folders) <= 1:
         if not isinstance(subject, list) or len(subject) <= 10:
             _unused, search = build_search(
-                address, date, subject, body_search, header, is_yahoo=is_yahoo
+                address,
+                date,
+                subject,
+                body_search,
+                header,
+                is_yahoo=is_yahoo,
+                subject_all=subject_all,
             )
             try:
                 res = await account.search(search, charset=None)
@@ -551,7 +577,13 @@ async def email_search(  # noqa: C901
         for i in range(0, len(subject), 10):
             batch = subject[i : i + 10]
             _unused, search = build_search(
-                address, date, batch, body_search, header, is_yahoo=is_yahoo
+                address,
+                date,
+                batch,
+                body_search,
+                header,
+                is_yahoo=is_yahoo,
+                subject_all=subject_all,
             )
             try:
                 res = await account.search(search, charset=None)
@@ -570,7 +602,13 @@ async def email_search(  # noqa: C901
     # Multi-folder search logic
     if not isinstance(subject, list) or len(subject) <= 10:
         _unused, search = build_search(
-            address, date, subject, body_search, header, is_yahoo=is_yahoo
+            address,
+            date,
+            subject,
+            body_search,
+            header,
+            is_yahoo=is_yahoo,
+            subject_all=subject_all,
         )
         try:
             uids = await _execute_single_search(account, search)
@@ -586,7 +624,13 @@ async def email_search(  # noqa: C901
     for i in range(0, len(subject), 10):
         batch = subject[i : i + 10]
         _unused, search = build_search(
-            address, date, batch, body_search, header, is_yahoo=is_yahoo
+            address,
+            date,
+            batch,
+            body_search,
+            header,
+            is_yahoo=is_yahoo,
+            subject_all=subject_all,
         )
         try:
             uids = await _execute_single_search(account, search)

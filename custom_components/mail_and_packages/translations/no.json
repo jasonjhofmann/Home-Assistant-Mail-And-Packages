@@ -12,6 +12,7 @@
       "amazon_domain": "Ugyldig videresendings e-postadresse.",
       "file_not_found": "Bildefil ikke funnet",
       "invalid_email_format": "Ugyldig e-postadresseformat.",
+      "invalid_sender_format": "Ugyldig format på avsenderadresse eller domene.",
       "missing_forwarded_emails": "Manglende videresendte e-postadresser. Du kan skrive inn '(none)' for å tømme denne innstillingen.",
       "path_not_found": "Mappen ble ikke funnet",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma, eller skriv inn (ingen) for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
         "title": "Amazon-innstillinger"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Begrens til bestemte Shopify-butikker (valgfritt)"
+        },
+        "description": "Shopify-butikker gjenkjennes automatisk fra ordrevarslings-e-postene deres, så dette kan stå som (none). For å telle bare enkelte butikker, skriv inn deres avsenderadresser eller domener atskilt med komma (f.eks. orders@examplestore.com, examplestore.com).",
+        "title": "Shopify-innstillinger"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon videresendte e-postadresser",
           "amazon_days": "Dager tilbake for å sjekke Amazon-e-poster"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Begrens til bestemte Shopify-butikker (valgfritt)"
+        },
+        "description": "Shopify-butikker gjenkjennes automatisk fra ordrevarslings-e-postene deres, så dette kan stå som (none). For å telle bare enkelte butikker, skriv inn deres avsenderadresser eller domener atskilt med komma (f.eks. orders@examplestore.com, examplestore.com).",
+        "title": "Shopify-innstillinger"
       },
       "options_storage": {
         "title": "Bildelagringssted",

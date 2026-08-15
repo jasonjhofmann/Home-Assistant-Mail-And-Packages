@@ -12,6 +12,7 @@
       "amazon_domain": "Neplatná adresa pre presmerovanie e-mailov.",
       "file_not_found": "Obrázokový súbor nebol nájdený",
       "invalid_email_format": "Neplatný formát e-mailovej adresy.",
+      "invalid_sender_format": "Neplatný formát adresy odosielateľa alebo domény.",
       "missing_forwarded_emails": "Chýbajú preposielané e-mailové adresy. Môžete zadať '(none)' na vymazanie tohto nastavenia.",
       "path_not_found": "Adresár nebol nájdený",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Prosím, zadajte doménu, z ktorej Amazon posiela e-maily (napríklad: amazon.com alebo amazon.de)\n\nAk používate preposlané e-maily od Amazonu, oddelte každú adresu čiarkou alebo zadajte (žiadne) na vymazanie tohto nastavenia.\n\nPoznámka: ak ste v predchádzajúcom kroku nakonfigurovali hlavičku presmerovania, pole s adresou presmerovania sa nezobrazí — hlavička automaticky spracúva zhodu e-mailov Amazon.",
         "title": "Nastavenia Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Obmedziť na konkrétne obchody Shopify (voliteľné)"
+        },
+        "description": "Obchody Shopify sa rozpoznávajú automaticky z e-mailov s oznámením o objednávke, takže toto pole môže zostať ako (none). Ak chcete počítať len niektoré obchody, zadajte ich adresy odosielateľov alebo domény oddelené čiarkami (napr. orders@examplestore.com, examplestore.com).",
+        "title": "Nastavenia Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon preposlal emailové adresy",
           "amazon_days": "Dni späť na kontrolu e-mailov od Amazonu"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Obmedziť na konkrétne obchody Shopify (voliteľné)"
+        },
+        "description": "Obchody Shopify sa rozpoznávajú automaticky z e-mailov s oznámením o objednávke, takže toto pole môže zostať ako (none). Ak chcete počítať len niektoré obchody, zadajte ich adresy odosielateľov alebo domény oddelené čiarkami (napr. orders@examplestore.com, examplestore.com).",
+        "title": "Nastavenia Shopify"
       },
       "options_storage": {
         "title": "Miesto ukladania obrázkov",

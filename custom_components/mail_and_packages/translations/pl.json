@@ -12,6 +12,7 @@
       "amazon_domain": "Nieprawidłowy adres e-mail do przekierowania.",
       "file_not_found": "Nie znaleziono pliku obrazu",
       "invalid_email_format": "Nieprawidłowy format adresu e-mail.",
+      "invalid_sender_format": "Nieprawidłowy format adresu nadawcy lub domeny.",
       "missing_forwarded_emails": "Brak przekierowanych adresów e-mail. Możesz wprowadzić '(none)', aby wyczyścić to ustawienie.",
       "path_not_found": "Katalog nie został znaleziony",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Wprowadź domenę, z której Amazon wysyła e-maile (np. amazon.com lub amazon.de)\n\nJeśli korzystasz z przekierowanych e-maili od Amazon, oddziel każdy adres przecinkiem lub wpisz (brak), aby wyczyścić to ustawienie.\n\nUwaga: jeśli w poprzednim kroku skonfigurowałeś nagłówek przekierowania, pole adresu przekierowania nie pojawi się — nagłówek automatycznie obsługuje dopasowywanie e-maili Amazon.",
         "title": "Ustawienia Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Ogranicz do wybranych sklepów Shopify (opcjonalnie)"
+        },
+        "description": "Sklepy Shopify są rozpoznawane automatycznie na podstawie e-maili z powiadomieniem o zamówieniu, więc to pole może pozostać jako (none). Aby liczyć tylko wybrane sklepy, wprowadź ich adresy nadawców lub domeny rozdzielone przecinkami (np. orders@examplestore.com, examplestore.com).",
+        "title": "Ustawienia Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon przekazał adresy e-mail",
           "amazon_days": "Dni do sprawdzenia dla wiadomości e-mail od Amazon"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Ogranicz do wybranych sklepów Shopify (opcjonalnie)"
+        },
+        "description": "Sklepy Shopify są rozpoznawane automatycznie na podstawie e-maili z powiadomieniem o zamówieniu, więc to pole może pozostać jako (none). Aby liczyć tylko wybrane sklepy, wprowadź ich adresy nadawców lub domeny rozdzielone przecinkami (np. orders@examplestore.com, examplestore.com).",
+        "title": "Ustawienia Shopify"
       },
       "options_storage": {
         "title": "Lokalizacja przechowywania obrazów",

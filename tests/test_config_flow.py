@@ -20,11 +20,13 @@ from custom_components.mail_and_packages.config_flow import (
     MailAndPackagesFlowHandler,
     MailAndPackagesOptionsFlow,
     _check_forwarded_emails,
+    _check_shopify_senders,
     _get_mailboxes,
     _get_schema_step_2,
     _get_schema_step_3,
     _get_schema_step_amazon,
     _get_schema_step_forwarded_emails,
+    _get_schema_step_shopify,
     _validate_login,
     _validate_user_input,
     multi_folder_select,
@@ -49,6 +51,7 @@ from custom_components.mail_and_packages.const import (
     CONF_GENERIC_CUSTOM_IMG_FILE,
     CONF_POST_DE_CUSTOM_IMG,
     CONF_POST_DE_CUSTOM_IMG_FILE,
+    CONF_SHOPIFY_SENDERS,
     CONF_STORAGE,
     CONF_UPS_CUSTOM_IMG,
     CONF_UPS_CUSTOM_IMG_FILE,
@@ -59,6 +62,8 @@ from custom_components.mail_and_packages.const import (
 )
 from tests.const import (
     DEFAULT_CUSTOM_IMAGE_DATA,
+    FAKE_CONFIG_DATA,
+    FAKE_UPDATE_DATA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -8434,3 +8439,788 @@ async def test_valid_oauth_token_helper(hass):
         ),
     ):
         assert await flow._async_valid_oauth_token("oauth2_google") is None
+
+
+@pytest.mark.parametrize(
+    ("senders", "expected_status", "expected_value"),
+    [
+        (
+            "orders@examplestore.com, examplestore.com",
+            "ok",
+            ["orders@examplestore.com", "examplestore.com"],
+        ),
+        ("examplestore.com", "ok", ["examplestore.com"]),
+        ("examplestore.com,", "ok", ["examplestore.com"]),
+        ("(none)", "ok", []),
+        ("", "ok", []),
+        ("not a domain", "invalid_sender_format", None),
+        ("orders@@examplestore.com", "invalid_sender_format", None),
+        ("-badstart.com", "invalid_sender_format", None),
+    ],
+)
+async def test_check_shopify_senders(senders, expected_status, expected_value):
+    """Test extra Shopify sender validation and parsing."""
+    status, parsed = _check_shopify_senders(senders)
+    assert status[0] == expected_status
+    if expected_status == "ok":
+        assert parsed == expected_value
+
+
+@pytest.mark.asyncio
+async def test_validate_shopify_senders(hass):
+    """Valid senders are parsed to a list by _validate_user_input."""
+    user_input = {
+        CONF_SHOPIFY_SENDERS: "orders@examplestore.com, examplestore.com",
+        CONF_GENERATE_MP4: False,
+    }
+
+    errors, result = await _validate_user_input(user_input)
+    assert errors == {}
+    assert result[CONF_SHOPIFY_SENDERS] == [
+        "orders@examplestore.com",
+        "examplestore.com",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_validate_shopify_senders_invalid(hass):
+    """Invalid senders surface the invalid_sender_format error."""
+    user_input = {
+        CONF_SHOPIFY_SENDERS: "not a domain",
+        CONF_GENERATE_MP4: False,
+    }
+
+    errors, _ = await _validate_user_input(user_input)
+    assert errors[CONF_SHOPIFY_SENDERS] == "invalid_sender_format"
+
+
+@pytest.mark.asyncio
+async def test_validate_shopify_senders_list_passthrough(hass):
+    """Already-parsed lists (stored config) are left untouched."""
+    user_input = {
+        CONF_SHOPIFY_SENDERS: ["examplestore.com"],
+        CONF_GENERATE_MP4: False,
+    }
+
+    errors, result = await _validate_user_input(user_input)
+    assert errors == {}
+    assert result[CONF_SHOPIFY_SENDERS] == ["examplestore.com"]
+
+
+async def test_get_schema_step_shopify_list_display():
+    """Stored sender lists are SUGGESTED, never injected as a default.
+
+    A schema default would be substituted whenever the field is submitted
+    empty, undoing a clear; a suggested value pre-fills the box and leaves
+    the key absent when cleared.
+    """
+    schema = _get_schema_step_shopify(
+        None,
+        {CONF_SHOPIFY_SENDERS: ["orders@examplestore.com", "examplestore.com"]},
+    )
+    key = next(k for k in schema.schema if k == CONF_SHOPIFY_SENDERS)
+    assert key.description == {
+        "suggested_value": "orders@examplestore.com, examplestore.com"
+    }
+    # Crucially, validating an empty submission must NOT resurrect the value
+    assert CONF_SHOPIFY_SENDERS not in schema({})
+
+
+@pytest.mark.asyncio
+async def test_step_config_shopify_validation_error(hass):
+    """Test config flow step shopify validation failure."""
+    flow = MailAndPackagesFlowHandler()
+    flow.hass = hass
+    # Ensure generate_mp4 is present to avoid KeyError in validation
+    flow._data = {CONF_GENERATE_MP4: False}
+
+    user_input = {CONF_SHOPIFY_SENDERS: "not a domain"}
+
+    with patch.object(flow, "async_show_form") as mock_show_form:
+        await flow.async_step_config_shopify(user_input)
+
+        # Should return the form again due to validation error
+        mock_show_form.assert_called_once()
+        assert flow._errors[CONF_SHOPIFY_SENDERS] == "invalid_sender_format"
+
+
+@pytest.mark.asyncio
+async def test_form_shopify_step(mock_imap, hass):
+    """The Shopify step is shown when a shopify sensor is selected."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] == "form"
+    assert result["errors"] == {}
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["type"] == "form"
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": [
+                    "shopify_packages",
+                    "shopify_delivering",
+                    "shopify_delivered",
+                    "ups_delivering",
+                ],
+            },
+        )
+        assert result["type"] == "form"
+        assert result["step_id"] == "config_shopify"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_SHOPIFY_SENDERS: "orders@examplestore.com, examplestore.com"},
+        )
+        assert result["type"] == "form"
+        assert result["step_id"] == "config_storage"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_SHOPIFY_SENDERS] == [
+        "orders@examplestore.com",
+        "examplestore.com",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_step_options_shopify(hass):
+    """Options step shopify parses senders and proceeds to storage."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=CONFIG_VER,
+        data={"host": "imap.test.email"},
+        options={
+            CONF_GENERATE_MP4: False,
+            "resources": ["shopify_packages"],
+            CONF_SHOPIFY_SENDERS: [],
+        },
+    )
+    entry.add_to_hass(hass)
+    flow = MailAndPackagesOptionsFlow(entry)
+    flow.hass = hass
+
+    # Stored empty list is offered as the "(none)" sentinel, as a suggestion
+    # rather than a default so clearing the field is not undone
+    result = await flow.async_step_options_shopify()
+    assert result["step_id"] == "options_shopify"
+    key = next(k for k in result["data_schema"].schema if k == CONF_SHOPIFY_SENDERS)
+    assert key.description == {"suggested_value": "(none)"}
+    assert CONF_SHOPIFY_SENDERS not in result["data_schema"]({})
+
+    with patch(
+        "pathlib.Path.exists",
+        return_value=True,
+    ):
+        result = await flow.async_step_options_shopify(
+            {CONF_SHOPIFY_SENDERS: "examplestore.com"},
+        )
+    assert result["step_id"] == "options_storage"
+    assert flow._data[CONF_SHOPIFY_SENDERS] == ["examplestore.com"]
+
+
+@pytest.mark.asyncio
+async def test_step_options_shopify_none_sentinel(hass):
+    """Submitting the "(none)" sentinel clears the stored sender list."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=CONFIG_VER,
+        data={"host": "imap.test.email"},
+        options={
+            CONF_GENERATE_MP4: False,
+            "resources": ["shopify_packages"],
+            CONF_SHOPIFY_SENDERS: ["examplestore.com"],
+        },
+    )
+    entry.add_to_hass(hass)
+    flow = MailAndPackagesOptionsFlow(entry)
+    flow.hass = hass
+
+    with patch(
+        "pathlib.Path.exists",
+        return_value=True,
+    ):
+        result = await flow.async_step_options_shopify(
+            {CONF_SHOPIFY_SENDERS: "(none)"},
+        )
+    assert result["step_id"] == "options_storage"
+    assert flow._data[CONF_SHOPIFY_SENDERS] == []
+
+
+@pytest.mark.asyncio
+async def test_step_options_shopify_invalid_input(hass):
+    """Invalid senders re-show the shopify options form with the error."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=CONFIG_VER,
+        data={"host": "imap.test.email"},
+        options={CONF_GENERATE_MP4: False, "resources": ["shopify_packages"]},
+    )
+    entry.add_to_hass(hass)
+    flow = MailAndPackagesOptionsFlow(entry)
+    flow.hass = hass
+
+    result = await flow.async_step_options_shopify(
+        {CONF_SHOPIFY_SENDERS: "not a domain"},
+    )
+    assert result["step_id"] == "options_shopify"
+    assert flow._errors == {CONF_SHOPIFY_SENDERS: "invalid_sender_format"}
+
+
+@pytest.mark.asyncio
+async def test_step_options_shopify_unrelated_error_passthrough(hass):
+    """Errors owned by later steps must not dead-end the shopify form.
+
+    The frontend only renders error keys present in the current form's
+    schema, so blocking here on e.g. a stale custom_img_file would re-show
+    the form with no visible message; the error belongs to options_3.
+    """
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=CONFIG_VER,
+        data={"host": "imap.test.email"},
+        options={
+            CONF_GENERATE_MP4: False,
+            "resources": ["shopify_packages"],
+            CONF_CUSTOM_IMG: True,
+            CONF_CUSTOM_IMG_FILE: "no/such/file.gif",
+        },
+    )
+    entry.add_to_hass(hass)
+    flow = MailAndPackagesOptionsFlow(entry)
+    flow.hass = hass
+
+    result = await flow.async_step_options_shopify(
+        {CONF_SHOPIFY_SENDERS: "examplestore.com"},
+    )
+    # Proceeds to the custom-image step (which owns and renders the error)
+    assert result["step_id"] == "options_3"
+    assert flow._data[CONF_SHOPIFY_SENDERS] == ["examplestore.com"]
+
+
+@pytest.mark.asyncio
+async def test_form_shopify_after_amazon_step(mock_imap, hass):
+    """Selecting Amazon AND Shopify sensors routes amazon -> shopify -> images."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+    )
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": True,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": ["amazon_packages", "shopify_packages", "ups_delivering"],
+            },
+        )
+        assert result["step_id"] == "config_amazon"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "amazon_domain": "amazon.com",
+                "amazon_days": 3,
+                "amazon_fwds": "(none)",
+            },
+        )
+        assert result["step_id"] == "config_shopify"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_SHOPIFY_SENDERS: "examplestore.com"},
+        )
+        # custom_img is enabled, so the shopify step hands off to config_3
+        assert result["step_id"] == "config_3"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"custom_img_file": "images/test.gif"},
+        )
+        assert result["step_id"] == "config_storage"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_SHOPIFY_SENDERS] == ["examplestore.com"]
+
+
+@pytest.mark.asyncio
+async def test_form_shopify_after_forwarded_emails_step(mock_imap, hass):
+    """Forwarded-emails mode routes forwarded -> shopify when selected."""
+    await setup.async_setup_component(hass, "persistent_notification", {})
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_USER},
+    )
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": True,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": ["shopify_packages", "ups_delivering"],
+            },
+        )
+        assert result["step_id"] == "config_forwarded_emails"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "forwarding_header": "",
+                "forwarded_emails": "forwarduser@fake.email",
+            },
+        )
+        assert result["step_id"] == "config_shopify"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_SHOPIFY_SENDERS: "orders@examplestore.com"},
+        )
+        assert result["step_id"] == "config_storage"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_SHOPIFY_SENDERS] == ["orders@examplestore.com"]
+
+
+@pytest.mark.asyncio
+async def test_options_flow_routes_to_shopify_and_saves(
+    hass, mock_imap, integration_factory
+):
+    """Options flow init routes to the shopify step and the save retains it."""
+    data = {
+        **FAKE_CONFIG_DATA,
+        "resources": [
+            "shopify_packages",
+            "shopify_delivering",
+            "shopify_delivered",
+            "mail_updated",
+        ],
+    }
+    entry = await integration_factory(data)
+
+    options_result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert options_result["step_id"] == "init"
+
+    with (
+        patch(
+            "pathlib.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.coordinator."
+            "MailDataUpdateCoordinator.process_emails",
+            side_effect=lambda *args, **kwargs: FAKE_UPDATE_DATA.copy(),
+        ),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            options_result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": data["resources"],
+            },
+        )
+        assert result["step_id"] == "options_shopify"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_SHOPIFY_SENDERS: "orders@examplestore.com, examplestore.com"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        # Let the options-triggered entry reload settle inside the patches
+        await hass.async_block_till_done()
+
+    # The options_keys whitelist must retain the parsed sender list
+    assert entry.options[CONF_SHOPIFY_SENDERS] == [
+        "orders@examplestore.com",
+        "examplestore.com",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_options_flow_forwarded_amazon_shopify_chain(
+    hass, mock_imap, integration_factory
+):
+    """Options flow walks forwarded -> amazon -> shopify when all apply."""
+    data = {
+        **FAKE_CONFIG_DATA,
+        "allow_forwarded_emails": True,
+        "forwarded_emails": ["forwarduser@fake.email"],
+        "resources": [
+            "amazon_packages",
+            "shopify_packages",
+            "mail_updated",
+        ],
+    }
+    entry = await integration_factory(data)
+
+    options_result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert options_result["step_id"] == "init"
+
+    with (
+        patch(
+            "pathlib.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "pathlib.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.coordinator."
+            "MailDataUpdateCoordinator.process_emails",
+            side_effect=lambda *args, **kwargs: FAKE_UPDATE_DATA.copy(),
+        ),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            options_result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": True,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": data["resources"],
+            },
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                "forwarding_header": "",
+                "forwarded_emails": "forwarduser@fake.email",
+            },
+        )
+        assert result["step_id"] == "options_amazon"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                "amazon_domain": "amazon.com",
+                "amazon_days": 3,
+                "amazon_fwds": "(none)",
+            },
+        )
+        assert result["step_id"] == "options_shopify"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_SHOPIFY_SENDERS: "examplestore.com"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        # Let the options-triggered entry reload settle inside the patches
+        await hass.async_block_till_done()
+
+    assert entry.options[CONF_SHOPIFY_SENDERS] == ["examplestore.com"]
+
+
+@pytest.mark.asyncio
+async def test_options_shopify_clearing_the_field_clears_the_setting(
+    hass, mock_imap, integration_factory
+):
+    """Clearing the senders field must clear the stored scope.
+
+    Regression: the field is pre-filled with the stored value, so an empty
+    submission omits the key and voluptuous substitutes that same value as
+    the schema default — silently restoring what the user just deleted.
+    """
+    data = {
+        **FAKE_CONFIG_DATA,
+        "resources": ["shopify_packages", "mail_updated"],
+        CONF_SHOPIFY_SENDERS: ["examplestore.com", "otherstore.com"],
+    }
+    entry = await integration_factory(data)
+
+    options_result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.coordinator."
+            "MailDataUpdateCoordinator.process_emails",
+            side_effect=lambda *args, **kwargs: FAKE_UPDATE_DATA.copy(),
+        ),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            options_result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": data["resources"],
+            },
+        )
+        assert result["step_id"] == "options_shopify"
+
+        # The user selects the pre-filled text and deletes it -> empty field
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_SHOPIFY_SENDERS: ""}
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert entry.options[CONF_SHOPIFY_SENDERS] == []
+
+
+@pytest.mark.asyncio
+async def test_options_shopify_omitted_field_does_not_restore_old_value(
+    hass, mock_imap, integration_factory
+):
+    """An omitted senders field must not resurrect the previous scope.
+
+    The field is vol.Optional with default=<current value>, so a submission
+    that omits the key has that value injected by voluptuous — silently
+    undoing a clear.
+    """
+    data = {
+        **FAKE_CONFIG_DATA,
+        "resources": ["shopify_packages", "mail_updated"],
+        CONF_SHOPIFY_SENDERS: ["examplestore.com", "otherstore.com"],
+    }
+    entry = await integration_factory(data)
+    options_result = await hass.config_entries.options.async_init(entry.entry_id)
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.coordinator."
+            "MailDataUpdateCoordinator.process_emails",
+            side_effect=lambda *args, **kwargs: FAKE_UPDATE_DATA.copy(),
+        ),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            options_result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": data["resources"],
+            },
+        )
+        assert result["step_id"] == "options_shopify"
+
+        # Field cleared -> client omits the key entirely
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {}
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {"storage": "custom_components/mail_and_packages/images/"},
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert entry.options[CONF_SHOPIFY_SENDERS] == []

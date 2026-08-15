@@ -1440,6 +1440,146 @@ async def test_shopify_delivered_class(hass, mock_imap_shopify_delivered):
     assert result[ATTR_TRACKING] == ["53495"]
 
 
+@pytest.mark.asyncio
+async def test_shopify_custom_domain_class(hass, mock_imap_shopify_custom_domain):
+    """A store on its own domain is matched with no sender configuration.
+
+    Shopify is matched on its order-notification template, so a store that
+    sends from its own domain needs no entry anywhere: the search carries the
+    template phrase AND the status phrase, and no FROM clause at all.
+    """
+    shipper = GenericShipper(hass, {"image_path": "test/path/"})
+
+    result = await shipper.process(
+        mock_imap_shopify_custom_domain,
+        "today",
+        "shopify_packages",
+    )
+    assert result[ATTR_COUNT] == 1
+    assert result[ATTR_TRACKING] == ["EO-1042"]
+
+    searches = [
+        str(call.args[0])
+        for call in mock_imap_shopify_custom_domain.search.call_args_list
+        if call.args
+    ]
+    assert any(
+        'SUBJECT "shipment from order"' in s and 'SUBJECT "is on the way"' in s
+        for s in searches
+    )
+    assert not any("FROM" in s for s in searches)
+
+
+@pytest.mark.asyncio
+async def test_shopify_sender_scope_narrows_search(
+    hass, mock_imap_shopify_custom_domain
+):
+    """A configured sender scope narrows the template match to those stores."""
+    shipper = GenericShipper(
+        hass,
+        {"image_path": "test/path/", "shopify_senders": ["exampleoutfitters.com"]},
+    )
+
+    await shipper.process(mock_imap_shopify_custom_domain, "today", "shopify_packages")
+
+    searches = [
+        str(call.args[0])
+        for call in mock_imap_shopify_custom_domain.search.call_args_list
+        if call.args
+    ]
+    # The scope is AND-ed with the template, never replaces it
+    assert any(
+        'FROM "exampleoutfitters.com"' in s and 'SUBJECT "shipment from order"' in s
+        for s in searches
+    )
+
+
+@pytest.mark.parametrize(
+    ("config", "sensor_type", "expected"),
+    [
+        # Unset / empty / sentinel => unscoped (match every store)
+        ({}, "shopify_packages", []),
+        ({"shopify_senders": []}, "shopify_packages", []),
+        ({"shopify_senders": "(none)"}, "shopify_packages", []),
+        # CSV string form (as stored by older/manual configs)
+        (
+            {"shopify_senders": "orders@examplestore.com, examplestore.com"},
+            "shopify_packages",
+            ["orders@examplestore.com", "examplestore.com"],
+        ),
+        # List form (as stored by the config flow)
+        (
+            {"shopify_senders": ["examplestore.com"]},
+            "shopify_delivered",
+            ["examplestore.com"],
+        ),
+        # Duplicates collapse
+        (
+            {"shopify_senders": ["examplestore.com", "examplestore.com"]},
+            "shopify_delivering",
+            ["examplestore.com"],
+        ),
+    ],
+)
+def test_resolve_sender_scope(hass, config, sensor_type, expected):
+    """Test the optional sender scope for template-matched shippers."""
+    shipper = GenericShipper(hass, config)
+    base = list(SENSOR_DATA[sensor_type].get("email", []))
+    assert shipper._resolve_sender_scope(sensor_type, base) == expected
+
+
+def test_resolve_sender_scope_other_shipper_untouched(hass):
+    """Shippers without a scope option keep their built-in sender list."""
+    shipper = GenericShipper(hass, {"shopify_senders": ["examplestore.com"]})
+    base = ["mcinfo@ups.com"]
+    assert shipper._resolve_sender_scope("ups_delivering", base) == ["mcinfo@ups.com"]
+
+
+def test_shopify_sensors_are_template_matched():
+    """Shopify carries no sender list; it matches on the template phrase."""
+    for sensor in ("shopify_packages", "shopify_delivering", "shopify_delivered"):
+        cfg = SENSOR_DATA[sensor]
+        assert "email" not in cfg
+        assert cfg["subject_all"] == ["shipment from order"]
+
+
+@pytest.mark.parametrize(
+    ("subject", "qualifies"),
+    [
+        ("A shipment from order #123 is on the way", True),
+        # Replies quote the original subject verbatim -> not a package
+        ("Re: A shipment from order #123 is on the way", False),
+        ("RE: A shipment from order #123 is on the way", False),
+        ("  re: A shipment from order #123 is on the way", False),
+        # Forwarding shipping mail into the mailbox is supported
+        ("Fwd: A shipment from order #123 is on the way", True),
+        ("FW: A shipment from order #123 is on the way", True),
+        # Missing the required template phrase
+        ("Your order is on the way", False),
+        # Missing the status phrase
+        ("A shipment from order #123 was created", False),
+    ],
+)
+def test_subject_qualifies(subject, qualifies):
+    """Subject rules: any expected term, all required terms, never a reply."""
+    assert (
+        GenericShipper._subject_qualifies(
+            subject, ["is on the way"], ["shipment from order"]
+        )
+        is qualifies
+    )
+
+
+def test_subject_qualifies_without_required_terms():
+    """Sensors with no required terms keep the any-of behaviour."""
+    assert GenericShipper._subject_qualifies(
+        "Your UPS package was delivered", ["was delivered"], []
+    )
+    assert not GenericShipper._subject_qualifies(
+        "Re: Your UPS package was delivered", ["was delivered"], []
+    )
+
+
 @pytest.mark.parametrize(
     ("subject", "expected_sensor"),
     [

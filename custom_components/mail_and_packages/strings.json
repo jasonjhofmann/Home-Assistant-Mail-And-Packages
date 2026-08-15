@@ -12,6 +12,7 @@
       "amazon_domain": "Invalid forwarding email address.",
       "file_not_found": "Image file not found",
       "invalid_email_format": "Invalid email address format.",
+      "invalid_sender_format": "Invalid sender address or domain format.",
       "missing_forwarded_emails": "Missing forwarded email addresses. You may enter '(none)' to clear this setting.",
       "path_not_found": "Directory not found",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -84,6 +85,13 @@
         },
         "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
         "title": "Amazon Settings"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Limit to specific Shopify stores (optional)"
+        },
+        "description": "Shopify stores are detected automatically from their order-notification emails, so this can be left as (none). To count only certain stores, enter their sender addresses or domains separated by commas (e.g. orders@examplestore.com, examplestore.com).",
+        "title": "Shopify Settings"
       },
       "config_forwarded_emails": {
         "data": {
@@ -239,6 +247,13 @@
         },
         "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
         "title": "Amazon Settings"
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Limit to specific Shopify stores (optional)"
+        },
+        "description": "Shopify stores are detected automatically from their order-notification emails, so this can be left as (none). To count only certain stores, enter their sender addresses or domains separated by commas (e.g. orders@examplestore.com, examplestore.com).",
+        "title": "Shopify Settings"
       },
       "options_storage": {
         "data": {

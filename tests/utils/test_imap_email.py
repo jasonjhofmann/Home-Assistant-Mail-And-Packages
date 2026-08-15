@@ -349,10 +349,71 @@ async def test_selectfolder_failure(caplog):
     assert "Error selecting folder" in caplog.text
 
 
-def test_build_search_empty_address_raises():
-    """Test build_search raises ValueError when address list is empty."""
-    with pytest.raises(ValueError, match="address list must not be empty"):
-        build_search([], "25-Mar-2026", subject="Test")
+def test_build_search_no_criteria_raises():
+    """Test build_search rejects a query with nothing but a date.
+
+    An empty address list is legal when a subject or body narrows the
+    search (template-matched shippers), but a date-only query would match
+    the entire mailbox.
+    """
+    with pytest.raises(ValueError, match="needs an address, subject, or body"):
+        build_search([], "25-Mar-2026")
+    with pytest.raises(ValueError, match="needs an address, subject, or body"):
+        build_search([], "25-Mar-2026", subject="")
+
+
+def test_build_search_subject_only_no_address():
+    """Subject-only searches omit the FROM clause entirely."""
+    _utf8, search = build_search([], "25-Mar-2026", subject="is on the way")
+    assert "FROM" not in search
+    assert search == 'SUBJECT "is on the way" SINCE 25-Mar-2026'
+
+
+def test_build_search_subject_all_is_anded():
+    """subject_all terms are AND-ed alongside the OR-ed subject terms."""
+    _utf8, search = build_search(
+        [],
+        "25-Mar-2026",
+        subject=["is on the way"],
+        subject_all=["shipment from order"],
+    )
+    assert search == (
+        'SUBJECT "is on the way" SUBJECT "shipment from order" SINCE 25-Mar-2026'
+    )
+
+    _utf8, both = build_search(
+        ["store.example"],
+        "25-Mar-2026",
+        subject=["is on the way"],
+        subject_all=["shipment from order"],
+    )
+    assert both == (
+        'FROM "store.example" SUBJECT "is on the way" '
+        'SUBJECT "shipment from order" SINCE 25-Mar-2026'
+    )
+
+
+def test_build_search_subject_all_multiple_terms():
+    """Every subject_all term becomes its own AND-ed SUBJECT key."""
+    _utf8, search = build_search(
+        [], "25-Mar-2026", subject_all=["shipment from order", "tracking"]
+    )
+    assert search == (
+        'SUBJECT "shipment from order" SUBJECT "tracking" SINCE 25-Mar-2026'
+    )
+
+
+def test_build_search_subject_all_yahoo_parenthesized():
+    """Yahoo/AOL queries keep their outer parentheses with subject_all."""
+    _utf8, search = build_search(
+        [],
+        "25-Mar-2026",
+        subject=["is on the way"],
+        subject_all=["shipment from order"],
+        is_yahoo=True,
+    )
+    assert search.startswith("(") and search.endswith(")")
+    assert 'SUBJECT "shipment from order"' in search
 
 
 def test_build_search_no_subject():

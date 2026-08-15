@@ -12,6 +12,7 @@
       "amazon_domain": "Dirección de correo electrónico de reenvío no válida.",
       "file_not_found": "Archivo de imagen no encontrado",
       "invalid_email_format": "Formato de dirección de correo electrónico inválido.",
+      "invalid_sender_format": "Formato de dirección de remitente o dominio no válido.",
       "missing_forwarded_emails": "Faltan direcciones de correo electrónico reenviadas. Puede introducir '(none)' para borrar esta configuración.",
       "path_not_found": "Directorio no encontrado",
       "invalid_auth": "Invalid authentication details. Please check your username and password.",
@@ -62,6 +63,13 @@
         },
         "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
         "title": "Configuración de Amazon"
+      },
+      "config_shopify": {
+        "data": {
+          "shopify_senders": "Limitar a tiendas Shopify específicas (opcional)"
+        },
+        "description": "Las tiendas Shopify se detectan automáticamente a partir de sus correos de notificación de pedido, así que puede dejarse en (none). Para contar solo ciertas tiendas, ingrese sus direcciones de remitente o dominios separados por comas (p. ej., orders@examplestore.com, examplestore.com).",
+        "title": "Configuración de Shopify"
       },
       "reconfig_2": {
         "data": {
@@ -262,6 +270,13 @@
           "amazon_fwds": "Amazon reenvió direcciones de correo electrónico",
           "amazon_days": "Días atrás para verificar los correos electrónicos de Amazon"
         }
+      },
+      "options_shopify": {
+        "data": {
+          "shopify_senders": "Limitar a tiendas Shopify específicas (opcional)"
+        },
+        "description": "Las tiendas Shopify se detectan automáticamente a partir de sus correos de notificación de pedido, así que puede dejarse en (none). Para contar solo ciertas tiendas, ingrese sus direcciones de remitente o dominios separados por comas (p. ej., orders@examplestore.com, examplestore.com).",
+        "title": "Configuración de Shopify"
       },
       "options_storage": {
         "title": "Ubicación de almacenamiento de imágenes",
