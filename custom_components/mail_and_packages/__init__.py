@@ -34,6 +34,7 @@ from .const import (
     CONF_FEDEX_CUSTOM_IMG_FILE,
     CONF_FOLDER,
     CONF_FORWARDED_EMAILS,
+    CONF_FORWARDING_HEADER,
     CONF_GENERIC_CUSTOM_IMG,
     CONF_GENERIC_CUSTOM_IMG_FILE,
     CONF_HOME_DEPOT_CUSTOM_IMG,
@@ -67,6 +68,7 @@ from .coordinator import (
     MailAndPackagesData,
     MailDataUpdateCoordinator,
 )
+from .helpers import is_empty_config_value
 from .utils.image import default_image_path, hash_file
 
 __all__ = [
@@ -145,6 +147,9 @@ async def async_setup_entry(
     )
     # Merge data and options
     config = {**config_entry.data, **config_entry.options}
+    # An entry already at CONFIG_VER is never migrated, so this is the only
+    # chokepoint that catches a sentinel restored from an old backup.
+    _normalize_legacy_sentinels(config)
 
     # Sort the resources
     if CONF_RESOURCES in config:
@@ -397,6 +402,27 @@ def _migrate_version_18(updated_config, version):
                 updated_config[CONF_FOLDER] = [
                     f.strip('"') for f in folder if isinstance(f, str)
                 ]
+
+
+def _normalize_legacy_sentinels(config):
+    """Replace stored "(none)" sentinels with the canonical empty value.
+
+    Entries written before the sentinel was retired can hold the literal string,
+    and an entry already at CONFIG_VER is never migrated, so this pass over the
+    merged runtime config is what protects one restored from an old backup. The
+    shippers splice CONF_FORWARDED_EMAILS straight into a HEADER FROM search
+    term, so an unconverted sentinel becomes a query for mail from "(none)".
+
+    Assigns the canonical empty rather than dropping the key, so callers see one
+    type per setting instead of "absent or empty".
+    """
+    for key, empty in (
+        (CONF_AMAZON_FWDS, []),
+        (CONF_FORWARDED_EMAILS, []),
+        (CONF_FORWARDING_HEADER, ""),
+    ):
+        if key in config and is_empty_config_value(config[key]):
+            config[key] = empty
 
 
 def _apply_default_config(updated_config):

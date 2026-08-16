@@ -1,12 +1,15 @@
 """Test Mail and Packages config flow."""
 
 import contextlib
+import json
 import logging
+import pathlib
 import ssl
 import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import voluptuous as vol
 from aioimaplib import AioImapException
 from anyio import Path
 from homeassistant import config_entries, setup
@@ -55,6 +58,11 @@ from custom_components.mail_and_packages.const import (
     CONF_WALMART_CUSTOM_IMG,
     CONF_WALMART_CUSTOM_IMG_FILE,
     CONFIG_VER,
+    DEFAULT_AMAZON_DAYS,
+    DEFAULT_AMAZON_DOMAIN,
+    DEFAULT_AMAZON_FWDS,
+    DEFAULT_FORWARDED_EMAILS,
+    DEFAULT_FORWARDING_HEADER,
     DOMAIN,
 )
 from tests.const import (
@@ -150,7 +158,13 @@ _LOGGER = logging.getLogger(__name__)
                 "allow_forwarded_emails": False,
                 "amazon_days": 3,
                 "amazon_domain": "amazon.com",
-                "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email,amazon@example.com,fake@email%$^&@example.com,bogusemail@testamazon.com",
+                "amazon_fwds": [
+                    "fakeuser@test.email",
+                    "fakeuser2@test.email",
+                    "amazon@example.com",
+                    "fake@email%$^&@example.com",
+                    "bogusemail@testamazon.com",
+                ],
                 "custom_img": True,
                 "custom_img_file": "images/test.gif",
                 "auth_type": "password",
@@ -1724,7 +1738,7 @@ async def test_form_storage_error(
                 "allow_forwarded_emails": False,
                 "amazon_days": 3,
                 "amazon_domain": "amazon.com",
-                "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email",
+                "amazon_fwds": ["fakeuser@test.email", "fakeuser2@test.email"],
                 "custom_img": True,
                 "custom_img_file": "images/test.gif",
                 "auth_type": "password",
@@ -1962,7 +1976,7 @@ async def test_reconfigure(
                 "allow_forwarded_emails": False,
                 "amazon_days": 3,
                 "amazon_domain": "amazon.com",
-                "amazon_fwds": "fakeuser@fake.email, fakeuser2@fake.email",
+                "amazon_fwds": ["fakeuser@fake.email", "fakeuser2@fake.email"],
                 "custom_img": True,
                 "custom_img_file": "images/test.gif",
                 "auth_type": "password",
@@ -2191,7 +2205,7 @@ async def test_reconfigure_no_amazon(
                 "allow_forwarded_emails": False,
                 "amazon_days": 3,
                 "amazon_domain": "amazon.com",
-                "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email",
+                "amazon_fwds": ["fakeuser@test.email", "fakeuser2@test.email"],
                 "custom_img": False,
                 "auth_type": "password",
                 "host": "imap.test.email",
@@ -2480,7 +2494,7 @@ async def test_config_flow_with_amazon_custom_image_only(
             "allow_forwarded_emails": False,
             "amazon_days": 3,
             "amazon_domain": "amazon.com",
-            "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email",
+            "amazon_fwds": ["fakeuser@test.email", "fakeuser2@test.email"],
             "custom_img": False,
             "amazon_custom_img": True,
             "amazon_custom_img_file": "images/test_amazon_only.jpg",
@@ -2669,7 +2683,7 @@ async def test_config_flow_with_ups_custom_image_only(
             "allow_forwarded_emails": False,
             "amazon_days": 3,
             "amazon_domain": "amazon.com",
-            "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email",
+            "amazon_fwds": ["fakeuser@test.email", "fakeuser2@test.email"],
             "custom_img": False,
             "ups_custom_img": True,
             "ups_custom_img_file": "images/test_ups_only.jpg",
@@ -4367,7 +4381,10 @@ async def test_validate_user_input_forwarded_emails_none():
     assert errors == {}
     # The helper should have set allow_forwarded_emails to False
     assert result_input[CONF_ALLOW_FORWARDED_EMAILS] is False
-    assert CONF_FORWARDED_EMAILS not in result_input
+    # Stored empty, not deleted: the effective config is {**data, **options} and
+    # the options flow writes only options, so dropping the key here would just
+    # unshadow the stale entry.data value.
+    assert result_input[CONF_FORWARDED_EMAILS] == []
 
 
 @pytest.mark.asyncio
@@ -4392,12 +4409,14 @@ async def test_get_schema_step_forwarded_emails_list_to_string():
     req_key = next(
         k for k in schema.schema if getattr(k, "schema", None) == CONF_FORWARDED_EMAILS
     )
-    assert req_key.default() == "forward@test.com, other@test.com"
+    assert req_key.description == {
+        "suggested_value": "forward@test.com, other@test.com"
+    }
 
 
 @pytest.mark.asyncio
 async def test_validate_user_input_forwarding_header_takes_precedence():
-    """Test that a forwarding header is stored and CONF_FORWARDED_EMAILS is removed."""
+    """Test that a forwarding header is stored and CONF_FORWARDED_EMAILS is cleared."""
     user_input = {
         CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From",
         CONF_FORWARDED_EMAILS: "forward@simplelogin.co",
@@ -4408,7 +4427,7 @@ async def test_validate_user_input_forwarding_header_takes_precedence():
 
     assert errors == {}
     assert result_input[CONF_FORWARDING_HEADER] == "X-SimpleLogin-Original-From"
-    assert CONF_FORWARDED_EMAILS not in result_input
+    assert result_input[CONF_FORWARDED_EMAILS] == []
 
 
 async def test_get_mailboxes_parsing_error(hass, caplog):
@@ -4724,6 +4743,7 @@ async def test_validate_forwarded_emails_missing_and_invalid():
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -4972,6 +4992,8 @@ async def test_form_allow_forwarded_emails(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
+                "forwarded_emails": [],
             },
         ),
     ],
@@ -5199,6 +5221,7 @@ async def test_form_allowed_forwarded_emails_entered_none(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -5423,6 +5446,7 @@ async def test_form_allow_forwarded_emails_without_amazon_or_custom_img(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -5647,6 +5671,7 @@ async def test_form_allow_forwarded_emails_without_custom_img(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -5880,6 +5905,7 @@ async def test_form_allow_forwarded_emails_with_custom_img_no_amazon(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -5976,8 +6002,10 @@ async def test_form_allow_forwarded_emails_none_entered(
             input_6,
         )
 
-    # this gets automatically removed when set to "(none)"
-    del data["forwarded_emails"]
+    # "(none)" clears this to the canonical empty value rather than dropping the
+    # key: the effective config is {**data, **options}, so a dropped key would
+    # only unshadow the previous value.
+    data["forwarded_emails"] = []
 
     assert result["type"] == "create_entry"
     assert result["title"] == title
@@ -6434,7 +6462,7 @@ async def test_form_allowed_forwards_invalid_email_address_format(
                 "forwarded_emails": ["user@example.com", "testuser@example.com"],
                 "amazon_days": 3,
                 "amazon_domain": "amazon.com",
-                "amazon_fwds": "fakeuser@test.email,fakeuser2@test.email",
+                "amazon_fwds": ["fakeuser@test.email", "fakeuser2@test.email"],
                 "custom_img": True,
                 "custom_img_file": "images/test.gif",
                 "auth_type": "password",
@@ -6485,6 +6513,7 @@ async def test_form_allowed_forwards_invalid_email_address_format(
                 "verify_ssl": False,
                 **DEFAULT_CUSTOM_IMAGE_DATA,
                 "usps_placeholder": True,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -6750,6 +6779,7 @@ async def test_reconfigure_allow_forwarded_emails(
                 "post_de_custom_img": False,
                 "ups_custom_img": False,
                 "walmart_custom_img": False,
+                "forwarding_header": "",
             },
         ),
     ],
@@ -6880,7 +6910,8 @@ async def test_validate_amazon_forwards(caplog):
     # Test with amazon.com address
     user_input[CONF_AMAZON_FWDS] = "fakeuser@amazon.com"
     errors, result = await _validate_user_input(user_input)
-    assert result[CONF_AMAZON_FWDS] == "fakeuser@amazon.com"
+    # Always stored as a list, so generate_service_email_domains() sees addresses.
+    assert result[CONF_AMAZON_FWDS] == ["fakeuser@amazon.com"]
     assert errors == {}
     assert (
         "Amazon domain found in email: fakeuser@amazon.com, this may cause errors when searching emails."
@@ -8020,8 +8051,8 @@ async def test_reauth_flow_oauth(
 
 
 @pytest.mark.asyncio
-async def test_options_amazon_empty_fwds_normalised(hass, integration):
-    """Test _show_options_amazon normalises [] CONF_AMAZON_FWDS to '(none)'."""
+async def test_options_amazon_empty_fwds_renders_empty_box(hass, integration):
+    """Test _show_options_amazon renders an empty box for an empty CONF_AMAZON_FWDS."""
     entry = integration
     handler = MailAndPackagesOptionsFlow(entry)
     handler.hass = hass
@@ -8034,8 +8065,12 @@ async def test_options_amazon_empty_fwds_normalised(hass, integration):
 
     assert result["type"] == "form"
     assert result["step_id"] == "options_amazon"
-    # The empty list should have been normalised to "(none)"
-    assert handler._data[CONF_AMAZON_FWDS] == "(none)"
+    # Showing the form must not rewrite stored config just to populate the box.
+    assert handler._data[CONF_AMAZON_FWDS] == []
+    marker = next(
+        k for k in result["data_schema"].schema if k.schema == CONF_AMAZON_FWDS
+    )
+    assert marker.description == {"suggested_value": ""}
 
 
 @pytest.mark.asyncio
@@ -8434,3 +8469,1132 @@ async def test_valid_oauth_token_helper(hass):
         ),
     ):
         assert await flow._async_valid_oauth_token("oauth2_google") is None
+
+
+# --- Clearing optional text fields (retired "(none)" sentinel) ---------------
+#
+# CONF_AMAZON_FWDS and CONF_FORWARDING_HEADER used to be impossible to clear from
+# the UI: the frontend omits an emptied optional field, and the schema's
+# `default=` then re-injected the value the user had just deleted. The schemas now
+# pre-fill via `suggested_value`, so a cleared field reaches the step handler as a
+# MISSING KEY and is stored as the canonical empty value.
+#
+# Every clearing test below asserts on the MERGED effective config
+# ({**entry.data, **entry.options}, as __init__.async_setup_entry builds it) and
+# seeds the pre-existing value into entry.data the way a migrated entry carries
+# it. Asserting on entry.options alone passes even when the fix is wrong: the
+# options flow writes only options, so simply dropping the key there leaves the
+# stale entry.data value showing through.
+#
+# CONF_FORWARDED_EMAILS is deliberately NOT clearable this way — see
+# test_options_forwarded_emails_empty_is_rejected.
+
+_OPTIONS_INIT_INPUT = {
+    "folder": "INBOX",
+    "scan_interval": 10,
+    "resources": ["usps_mail"],
+    "gif_duration": 5,
+    "imap_timeout": 30,
+    "allow_external": True,
+    "usps_placeholder": True,
+    "custom_img": False,
+    "allow_forwarded_emails": True,
+}
+
+_STORAGE_INPUT = {"storage": "custom_components/mail_and_packages/images/"}
+
+
+def _effective_config(entry) -> dict:
+    """Return the config the integration actually runs on."""
+    return {**entry.data, **entry.options}
+
+
+async def _options_flow_at_init(hass, entry, **stored):
+    """Seed stored settings into entry.data, then open the options flow.
+
+    entry.data is where a migrated entry keeps these settings, and it is what an
+    options-only write cannot remove — so seeding here is what makes a clearing
+    test able to fail.
+    """
+    hass.config_entries.async_update_entry(entry, data={**entry.data, **stored})
+    await hass.async_block_till_done()
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    return result
+
+
+@pytest.mark.asyncio
+async def test_options_forwarding_header_cleared(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test a stored forwarding header can be cleared from the options flow."""
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From",
+                CONF_FORWARDED_EMAILS: ["fwd@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_OPTIONS_INIT_INPUT),
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        # Header box emptied, address list kept: the frontend omits the header.
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDED_EMAILS: "fwd@example.com"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    config = _effective_config(entry)
+    assert config[CONF_FORWARDING_HEADER] == ""
+    assert config[CONF_FORWARDED_EMAILS] == ["fwd@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_options_forwarding_header_roundtrip(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test a real forwarding header still survives the options flow."""
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                # Stale address list the header must supersede.
+                CONF_FORWARDED_EMAILS: ["stale@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_OPTIONS_INIT_INPUT),
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    config = _effective_config(entry)
+    assert config[CONF_FORWARDING_HEADER] == "X-SimpleLogin-Original-From"
+    # A header supersedes the address list, so it is cleared rather than left
+    # shadowing from entry.data.
+    assert config[CONF_FORWARDED_EMAILS] == []
+
+
+@pytest.mark.asyncio
+async def test_options_forwarded_emails_empty_is_rejected(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test emptying the forwarded addresses box is an error, not a clear.
+
+    The box is only shown while the allow-forwarded-emails toggle is on, so
+    submitting it empty is a genuine user error. Clearing the setting is done by
+    unticking the toggle, or with the legacy "(none)" the error points at.
+    """
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                CONF_FORWARDED_EMAILS: ["fwd@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_OPTIONS_INIT_INPUT),
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {},
+        )
+
+    assert result["step_id"] == "options_forwarded_emails"
+    assert result["errors"] == {CONF_FORWARDED_EMAILS: "missing_forwarded_emails"}
+    # The rejected submission must not have been persisted either.
+    assert _effective_config(entry)[CONF_FORWARDED_EMAILS] == ["fwd@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_config_flow_forwarded_emails_empty_is_rejected(
+    hass: HomeAssistant, mock_imap
+):
+    """Test the same rejection on first run, where the box arrives omitted.
+
+    The frontend omits an emptied optional field entirely, so this covers the
+    missing-key spelling that test_form_allowed_forwards_missing_email_addresses
+    (which submits an explicit "") does not.
+    """
+    await setup.async_setup_component(hass, "persistent_notification", {})
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch("custom_components.mail_and_packages.async_setup", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_USER},
+        )
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": True,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": ["usps_mail"],
+            },
+        )
+        assert result["step_id"] == "config_forwarded_emails"
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+
+    assert result["step_id"] == "config_forwarded_emails"
+    assert result["errors"] == {CONF_FORWARDED_EMAILS: "missing_forwarded_emails"}
+
+
+@pytest.mark.asyncio
+async def test_options_forwarded_emails_legacy_sentinel_clears(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test the legacy "(none)" still clears the forwarded addresses list."""
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                CONF_FORWARDED_EMAILS: ["fwd@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_OPTIONS_INIT_INPUT),
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDED_EMAILS: "(none)"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    config = _effective_config(entry)
+    assert config[CONF_FORWARDED_EMAILS] == []
+    assert config[CONF_ALLOW_FORWARDED_EMAILS] is False
+
+
+@pytest.mark.asyncio
+async def test_options_forwarded_emails_roundtrip(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test a real forwarded address still round-trips through the options flow."""
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{CONF_ALLOW_FORWARDED_EMAILS: True},
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_OPTIONS_INIT_INPUT),
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDED_EMAILS: "keep@example.com"},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert _effective_config(entry)[CONF_FORWARDED_EMAILS] == ["keep@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_options_amazon_fwds_cleared(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test a stored Amazon forwarding list can be cleared from the options flow."""
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: False,
+                CONF_AMAZON_FWDS: ["fwd@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                **_OPTIONS_INIT_INPUT,
+                "resources": ["amazon_delivered"],
+                "allow_forwarded_emails": False,
+            },
+        )
+        assert result["step_id"] == "options_amazon"
+
+        # amazon_fwds omitted: the user emptied the box.
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_AMAZON_DOMAIN: "amazon.com", CONF_AMAZON_DAYS: 3},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert _effective_config(entry)[CONF_AMAZON_FWDS] == []
+
+
+@pytest.mark.asyncio
+async def test_options_amazon_fwds_roundtrip_stores_a_list(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test kept Amazon forwards are stored as a list, not the raw text box value.
+
+    generate_service_email_domains() iterates this value, so storing the raw
+    comma-separated string makes it walk characters instead of addresses and
+    silently skips the service-domain collision check.
+    """
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{CONF_ALLOW_FORWARDED_EMAILS: False},
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                **_OPTIONS_INIT_INPUT,
+                "resources": ["amazon_delivered"],
+                "allow_forwarded_emails": False,
+            },
+        )
+        assert result["step_id"] == "options_amazon"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {
+                CONF_AMAZON_DOMAIN: "amazon.com",
+                CONF_AMAZON_DAYS: 3,
+                CONF_AMAZON_FWDS: "one@example.com, two@example.com",
+            },
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert _effective_config(entry)[CONF_AMAZON_FWDS] == [
+        "one@example.com",
+        "two@example.com",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_options_amazon_fwds_kept_in_header_mode(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test stored Amazon forwards survive a save while a forwarding header is set.
+
+    In header mode _get_schema_step_amazon does not render CONF_AMAZON_FWDS at all,
+    so its absence from the submission means "not on the form", not "cleared".
+    """
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From",
+                CONF_AMAZON_FWDS: ["keep@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {**_OPTIONS_INIT_INPUT, "resources": ["amazon_delivered"]},
+        )
+        assert result["step_id"] == "options_forwarded_emails"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From"},
+        )
+        assert result["step_id"] == "options_amazon"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_AMAZON_DOMAIN: "amazon.com", CONF_AMAZON_DAYS: 3},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    assert _effective_config(entry)[CONF_AMAZON_FWDS] == ["keep@example.com"]
+
+
+@pytest.mark.asyncio
+async def test_config_amazon_fwds_cleared_after_validation_error(
+    hass: HomeAssistant, mock_imap
+):
+    """Test a rejected Amazon forwards value can then be cleared on the same form.
+
+    The error path feeds the rejected submission back into the schema builder, so
+    this is where a `default=` would resurrect the value the user just deleted.
+    """
+    await setup.async_setup_component(hass, "persistent_notification", {})
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch("custom_components.mail_and_packages.async_setup", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_USER},
+        )
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": False,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": ["amazon_delivered"],
+            },
+        )
+        assert result["step_id"] == "config_amazon"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                CONF_AMAZON_DOMAIN: "amazon.com",
+                CONF_AMAZON_DAYS: 3,
+                CONF_AMAZON_FWDS: "not-an-email",
+            },
+        )
+        assert result["step_id"] == "config_amazon"
+        assert result["errors"] == {CONF_AMAZON_FWDS: "invalid_email_format"}
+        # The rejected value is offered back for editing, never re-imposed.
+        marker = next(
+            k for k in result["data_schema"].schema if k.schema == CONF_AMAZON_FWDS
+        )
+        assert marker.default is vol.UNDEFINED
+        assert marker.description == {"suggested_value": "not-an-email"}
+
+        # The user gives up and empties the box.
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_AMAZON_DOMAIN: "amazon.com", CONF_AMAZON_DAYS: 3},
+        )
+        assert result["step_id"] == "config_storage", (
+            f"cleared value resurrected, errors={result.get('errors')}"
+        )
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_AMAZON_FWDS] == []
+
+
+# --- Schema builders: what an empty box is pre-filled with -------------------
+
+
+@pytest.mark.parametrize(
+    ("name", "constant"),
+    [
+        ("DEFAULT_AMAZON_FWDS", DEFAULT_AMAZON_FWDS),
+        ("DEFAULT_FORWARDED_EMAILS", DEFAULT_FORWARDED_EMAILS),
+        ("DEFAULT_FORWARDING_HEADER", DEFAULT_FORWARDING_HEADER),
+    ],
+)
+async def test_optional_text_defaults_are_empty(name, constant):
+    """Test the optional text settings default to empty, not the retired sentinel.
+
+    Asserted on the constants themselves rather than through a rendered form: the
+    schema builders also normalise a legacy "(none)" away (see
+    test_schema_suggests_empty_for_legacy_stored_sentinel), so a form-level test
+    cannot tell the two spellings apart and would let a revert here rot.
+    """
+    assert constant == "", name
+
+
+@pytest.mark.asyncio
+async def test_schema_forwarded_emails_suggests_empty_on_first_run():
+    """Test a first run pre-fills both forwarding boxes empty, not with "(none)".
+
+    Guards DEFAULT_FORWARDING_HEADER / DEFAULT_FORWARDED_EMAILS: restoring the
+    retired sentinel as the constant would put the literal "(none)" back in front
+    of every new user.
+    """
+    schema = _get_schema_step_forwarded_emails(None, {})
+
+    markers = {key.schema: key for key in schema.schema}
+    for key in (CONF_FORWARDING_HEADER, CONF_FORWARDED_EMAILS):
+        assert markers[key].default is vol.UNDEFINED
+        assert markers[key].description == {"suggested_value": ""}
+
+
+@pytest.mark.asyncio
+async def test_schema_amazon_suggests_empty_on_first_run():
+    """Test a first run pre-fills the Amazon forwards box empty, not with "(none)".
+
+    Guards DEFAULT_AMAZON_FWDS the same way, through the defaults dict that
+    _show_config_amazon actually passes in.
+    """
+    schema = _get_schema_step_amazon(
+        None,
+        {
+            CONF_AMAZON_DOMAIN: DEFAULT_AMAZON_DOMAIN,
+            CONF_AMAZON_FWDS: DEFAULT_AMAZON_FWDS,
+            CONF_AMAZON_DAYS: DEFAULT_AMAZON_DAYS,
+        },
+    )
+
+    marker = next(k for k in schema.schema if k.schema == CONF_AMAZON_FWDS)
+    assert marker.default is vol.UNDEFINED
+    assert marker.description == {"suggested_value": ""}
+
+
+@pytest.mark.asyncio
+async def test_schema_forwarded_emails_no_default_injection():
+    """Test the forwarded emails schema pre-fills without injecting a default."""
+    default_dict = {
+        CONF_FORWARDING_HEADER: "X-Orig",
+        CONF_FORWARDED_EMAILS: ["fwd@example.com", "other@example.com"],
+    }
+    schema = _get_schema_step_forwarded_emails(None, default_dict)
+
+    # A cleared field is omitted by the frontend; it must stay omitted.
+    assert schema({}) == {}
+
+    markers = {key.schema: key for key in schema.schema}
+    for key in (CONF_FORWARDING_HEADER, CONF_FORWARDED_EMAILS):
+        assert markers[key].default is vol.UNDEFINED
+    assert markers[CONF_FORWARDING_HEADER].description == {"suggested_value": "X-Orig"}
+    assert markers[CONF_FORWARDED_EMAILS].description == {
+        "suggested_value": "fwd@example.com, other@example.com"
+    }
+
+
+@pytest.mark.asyncio
+async def test_schema_amazon_no_default_injection():
+    """Test the Amazon schema pre-fills forwards without injecting a default."""
+    default_dict = {
+        CONF_AMAZON_DOMAIN: "amazon.com",
+        CONF_AMAZON_FWDS: ["fwd@example.com"],
+        CONF_AMAZON_DAYS: 3,
+    }
+    schema = _get_schema_step_amazon(None, default_dict)
+
+    # Only amazon_fwds is clearable; the other two keep their defaults.
+    assert schema({}) == {CONF_AMAZON_DOMAIN: "amazon.com", CONF_AMAZON_DAYS: 3}
+
+    marker = next(k for k in schema.schema if k.schema == CONF_AMAZON_FWDS)
+    assert marker.default is vol.UNDEFINED
+    # Stored as a list, rendered in a text box: it must be joined, not repr'd.
+    assert marker.description == {"suggested_value": "fwd@example.com"}
+
+
+@pytest.mark.parametrize(
+    "stored",
+    ["(none)", ["(none)"]],
+)
+@pytest.mark.asyncio
+async def test_schema_suggests_empty_for_legacy_stored_sentinel(stored):
+    """Test a legacy stored "(none)" is offered as an empty box.
+
+    Pre-filling the retired spelling would hand it straight back to exactly the
+    users the stored-sentinel back-compat exists for.
+    """
+    fwd_schema = _get_schema_step_forwarded_emails(
+        None,
+        {CONF_FORWARDING_HEADER: "(none)", CONF_FORWARDED_EMAILS: stored},
+    )
+    markers = {key.schema: key for key in fwd_schema.schema}
+    assert markers[CONF_FORWARDING_HEADER].description == {"suggested_value": ""}
+    assert markers[CONF_FORWARDED_EMAILS].description == {"suggested_value": ""}
+
+    amazon_schema = _get_schema_step_amazon(
+        None,
+        {
+            CONF_AMAZON_DOMAIN: "amazon.com",
+            CONF_AMAZON_FWDS: stored,
+            CONF_AMAZON_DAYS: 3,
+        },
+    )
+    marker = next(k for k in amazon_schema.schema if k.schema == CONF_AMAZON_FWDS)
+    assert marker.description == {"suggested_value": ""}
+
+
+# --- Errors raised by other steps must not trap this one ---------------------
+#
+# _validate_user_input validates the WHOLE merged config, not just the fields of
+# the step that called it. In the options flow that is everything the entry
+# already holds, so an unrelated setting that has gone stale — a custom image
+# file the user deleted, a storage directory that no longer exists — comes back
+# as an error keyed to a field the current form does not render. Home Assistant
+# only renders an error against a field present in the form's schema, so
+# returning one redisplays the form with no visible message and no way forward.
+
+_STALE_IMG_FILE = "images/deleted_after_setup.gif"
+_STALE_STORAGE = "images/deleted_after_setup/"
+
+
+async def _options_flow_at_forwarded_emails_with_stale_paths(hass, entry):
+    """Reach the forwarded-emails options step with unrelated settings broken.
+
+    The filesystem is faked only while the entry is being updated and reloaded;
+    the flow steps themselves run against the real filesystem, so the seeded
+    image file and storage directory really are missing by the time a step
+    validates them.
+    """
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: True,
+                CONF_FORWARDED_EMAILS: ["fwd@example.com"],
+                CONF_CUSTOM_IMG: True,
+                CONF_CUSTOM_IMG_FILE: _STALE_IMG_FILE,
+                CONF_STORAGE: _STALE_STORAGE,
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {**_OPTIONS_INIT_INPUT, CONF_CUSTOM_IMG: True},
+        )
+
+    assert result["step_id"] == "options_forwarded_emails"
+    return result
+
+
+@pytest.mark.asyncio
+async def test_options_forwarded_emails_not_trapped_by_other_steps(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test unrenderable errors from other steps do not trap this step.
+
+    Neither custom_img_file nor storage is a field of this form, so an error on
+    either would be invisible here — the user would resubmit a perfectly valid
+    address list forever. The flow must advance instead.
+    """
+    entry = integration
+    result = await _options_flow_at_forwarded_emails_with_stale_paths(hass, entry)
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_FORWARDED_EMAILS: "fwd@example.com"},
+    )
+
+    assert result["step_id"] == "options_3", (
+        f"trapped on the forwarded-emails step, errors={result.get('errors')}"
+    )
+    assert not result["errors"]
+
+    # Dropped, not swallowed: the step that owns the field raises the same error
+    # against a box the user can see. (options_3 also reports the stale storage
+    # directory, which is that step's own pre-existing blind spot.)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {CONF_CUSTOM_IMG_FILE: _STALE_IMG_FILE},
+    )
+    assert result["step_id"] == "options_3"
+    assert result["errors"][CONF_CUSTOM_IMG_FILE] == "file_not_found"
+
+
+@pytest.mark.asyncio
+async def test_options_forwarded_emails_still_reports_its_own_error(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test this step still redisplays for an error on a field it does render.
+
+    The same stale image file and storage directory are pending, so this also
+    pins that they are filtered out rather than returned alongside — returning
+    them would put undisplayable keys in front of the user.
+    """
+    entry = integration
+    result = await _options_flow_at_forwarded_emails_with_stale_paths(hass, entry)
+
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {})
+
+    assert result["step_id"] == "options_forwarded_emails"
+    assert result["errors"] == {CONF_FORWARDED_EMAILS: "missing_forwarded_emails"}
+    # The rejected submission must not have been persisted either.
+    assert _effective_config(entry)[CONF_FORWARDED_EMAILS] == ["fwd@example.com"]
+
+
+# The error codes the options forwarded-emails step can raise. The frontend
+# resolves an options-flow field error as
+# `component.<domain>.options.error.<code>` and falls back to printing the raw
+# code — verified against home-assistant/frontend
+# src/dialogs/config-flow/show-dialog-options-flow.ts, which has no config.error
+# fallback — so every code this step can raise needs an options.error string.
+_OPTIONS_ERROR_CODES = ("missing_forwarded_emails", "invalid_email_format")
+
+_COMPONENT_DIR = (
+    pathlib.Path(__file__).parents[1] / "custom_components" / "mail_and_packages"
+)
+_STRINGS_FILES = [
+    _COMPONENT_DIR / "strings.json",
+    *sorted((_COMPONENT_DIR / "translations").glob("*.json")),
+]
+
+
+async def test_options_error_strings_exist():
+    """Test every language can render the errors this step now raises.
+
+    Same code, same message, whichever flow raised it: the options strings are
+    the config strings verbatim.
+    """
+    missing = []
+    for path in _STRINGS_FILES:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        options_errors = data.get("options", {}).get("error", {})
+        missing.extend(
+            f"{path.name}: options.error.{code}"
+            for code in _OPTIONS_ERROR_CODES
+            if options_errors.get(code) != data["config"]["error"][code]
+        )
+
+    assert not missing, f"untranslated in the options flow: {missing}"
+
+
+# --- Back-compat guards for entries written before the sentinel was retired ---
+
+
+@pytest.mark.asyncio
+async def test_options_legacy_none_header_is_not_a_live_header(
+    hass: HomeAssistant,
+    integration,
+    mock_imap_no_email,
+    mock_update,
+) -> None:
+    """Test a stored legacy "(none)" forwarding header is not read as a header name.
+
+    DEFAULT_FORWARDING_HEADER used to be "(none)" and the old schema injected its
+    default into every submission, so entries written before this PR carry the
+    literal string. It means "no header" — and header mode deliberately clears
+    the address list, so mistaking it for a real header name wipes the forwarded
+    addresses of exactly the users the sentinel back-compat exists for.
+
+    Forwarding is toggled off here, which skips the forwarded-emails step that
+    would otherwise rewrite the header on the way past: this is the route that
+    reaches validation with the stored spelling still intact.
+    """
+    entry = integration
+
+    with (
+        patch("pathlib.Path.exists", return_value=True),
+        patch("pathlib.Path.is_file", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.config_flow._get_mailboxes",
+            return_value=["INBOX"],
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+    ):
+        result = await _options_flow_at_init(
+            hass,
+            entry,
+            **{
+                CONF_ALLOW_FORWARDED_EMAILS: False,
+                CONF_FORWARDING_HEADER: "(none)",
+                CONF_FORWARDED_EMAILS: ["fwd@example.com"],
+            },
+        )
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {**_OPTIONS_INIT_INPUT, CONF_ALLOW_FORWARDED_EMAILS: False},
+        )
+        assert result["step_id"] == "options_storage"
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+    config = _effective_config(entry)
+    assert config[CONF_FORWARDED_EMAILS] == ["fwd@example.com"]
+    assert config[CONF_FORWARDING_HEADER] == ""
+
+
+@pytest.mark.asyncio
+async def test_config_amazon_fwds_untouched_in_header_mode(
+    hass: HomeAssistant, mock_imap
+):
+    """Test the Amazon step writes no forwards value while in header mode.
+
+    _get_schema_step_amazon does not render the Amazon forwards box once a
+    forwarding header is set, so its absence from the submission means "was not
+    on the form", not "the user emptied it". The step's guard is what tells the
+    two apart. This is the config-flow half of that guard; its options-flow half
+    (test_options_amazon_fwds_kept_in_header_mode) is what stops the same
+    unguarded normalisation from wiping a stored list.
+    """
+    await setup.async_setup_component(hass, "persistent_notification", {})
+
+    with (
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.exists",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow.Path.is_file",
+            return_value=True,
+        ),
+        patch(
+            "custom_components.mail_and_packages.config_flow._check_ffmpeg",
+            return_value=True,
+        ),
+        patch("custom_components.mail_and_packages.async_setup", return_value=True),
+        patch(
+            "custom_components.mail_and_packages.async_setup_entry",
+            return_value=True,
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_USER},
+        )
+        await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {"auth_type": "password"},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "host": "imap.test.email",
+                "port": "993",
+                "username": "test@test.email",
+                "password": "notarealpassword",
+                "imap_security": "SSL",
+                "verify_ssl": False,
+            },
+        )
+        assert result["step_id"] == "config_2"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {
+                "allow_external": False,
+                "allow_forwarded_emails": True,
+                "custom_img": False,
+                "folder": "INBOX",
+                "generate_grid": False,
+                "generate_mp4": False,
+                "gif_duration": 5,
+                "imap_timeout": 30,
+                "scan_interval": 20,
+                "custom_days": 3,
+                "resources": ["amazon_delivered"],
+            },
+        )
+        assert result["step_id"] == "config_forwarded_emails"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_FORWARDING_HEADER: "X-SimpleLogin-Original-From"},
+        )
+        assert result["step_id"] == "config_amazon"
+        # The box really is not on the form, so nothing can be read from it.
+        assert not any(
+            key.schema == CONF_AMAZON_FWDS for key in result["data_schema"].schema
+        )
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_AMAZON_DOMAIN: "amazon.com", CONF_AMAZON_DAYS: 3},
+        )
+        assert result["step_id"] == "config_storage"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            dict(_STORAGE_INPUT),
+        )
+
+    assert result["type"] == "create_entry"
+    assert CONF_AMAZON_FWDS not in result["data"], (
+        "the Amazon forwards box was never rendered, so the step must not invent "
+        "a value for it"
+    )
+    assert result["data"][CONF_FORWARDING_HEADER] == "X-SimpleLogin-Original-From"
+    assert result["data"][CONF_FORWARDED_EMAILS] == []

@@ -82,7 +82,7 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         },
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "title": "Amazon Settings"
       },
       "config_forwarded_emails": {
@@ -135,7 +135,7 @@
         "data_description": {
           "imap_timeout": "Covers the entire scan — login plus every per-carrier IMAP search — not just connecting. Raise this if large mailboxes time out; lower it to fail faster."
         },
-        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "title": "Mail and Packages (Step 2 of 2)"
       },
       "reconfig_3": {
@@ -156,7 +156,7 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         },
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "title": "Amazon Settings"
       },
       "config_storage": {
@@ -191,6 +191,10 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Missing forwarded email addresses. You may enter '(none)' to clear this setting.",
+      "invalid_email_format": "Invalid email address format."
+    },
     "step": {
       "init": {
         "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma.",
@@ -237,7 +241,7 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         },
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "title": "Amazon Settings"
       },
       "options_storage": {

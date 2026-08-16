@@ -17,9 +17,11 @@ from custom_components.mail_and_packages import (
 )
 from custom_components.mail_and_packages.const import (
     CONF_AMAZON_DOMAIN,
+    CONF_AMAZON_FWDS,
     CONF_AUTH_TYPE,
     CONF_FOLDER,
     CONF_FORWARDED_EMAILS,
+    CONF_FORWARDING_HEADER,
     CONF_IMAP_SECURITY,
     CONF_SCAN_INTERVAL,
     CONF_VERIFY_SSL,
@@ -1030,3 +1032,31 @@ async def test_update_listener_options_change_triggers_reload():
 
     # async_reload SHOULD be called
     mock_hass.config_entries.async_reload.assert_called_once_with("test_entry")
+
+
+@pytest.mark.asyncio
+async def test_setup_entry_normalizes_stored_sentinels(
+    integration_factory,
+    mock_imap_no_email,
+    mock_update,
+):
+    """Test a stored "(none)" never reaches the coordinator's effective config.
+
+    An entry already at CONFIG_VER is never migrated, so async_setup_entry is the
+    only chokepoint left for an entry restored from a pre-removal backup. The
+    shippers splice these values straight into IMAP search terms, so an
+    unconverted sentinel becomes a query for mail from "(none)".
+    """
+    entry = await integration_factory(
+        {
+            **FAKE_CONFIG_DATA,
+            CONF_AMAZON_FWDS: ["(none)"],
+            CONF_FORWARDED_EMAILS: "(none)",
+            CONF_FORWARDING_HEADER: "(none)",
+        },
+    )
+
+    config = entry.runtime_data.coordinator.config
+    assert config[CONF_AMAZON_FWDS] == []
+    assert config[CONF_FORWARDED_EMAILS] == []
+    assert config[CONF_FORWARDING_HEADER] == ""

@@ -84,7 +84,7 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         },
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
         "title": "Amazon Settings"
       },
       "reconfigure": {
@@ -132,7 +132,7 @@
         "data_description": {
           "imap_timeout": "Covers the entire scan — login plus every per-carrier IMAP search — not just connecting. Raise this if large mailboxes time out; lower it to fail faster."
         },
-        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "title": "Mail and Packages (Step 2 of 2)"
       },
       "reconfig_3": {
@@ -153,7 +153,7 @@
           "amazon_fwds": "Amazon forwarded email addresses",
           "amazon_days": "Days back to check for Amazon emails"
         },
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
         "title": "Amazon Settings"
       },
       "config_storage": {
@@ -176,8 +176,8 @@
           "forwarded_emails": "Forwarded Email Addresses"
         },
         "data_description": {
-          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Enter '(none)' or leave blank to use the address list instead.",
-          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave as '(none)' if using the forwarding header above."
+          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Leave it empty to use the address list instead.",
+          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave it empty if you are using the forwarding header above."
         },
         "description": "Choose how to match forwarded emails.\n\n**Option 1 — Forwarding header**: If your service (e.g. SimpleLogin) includes the original sender in a custom header, enter that header name. Mail and Packages will use it to match carrier addresses automatically.\n\n**Option 2 — Address list**: Enter the forwarding addresses your service assigned to each carrier, separated by commas.",
         "title": "Forwarded Email Settings"
@@ -188,8 +188,8 @@
           "forwarded_emails": "Forwarded Email Addresses"
         },
         "data_description": {
-          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Enter '(none)' or leave blank to use the address list instead.",
-          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave as '(none)' if using the forwarding header above."
+          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Leave it empty to use the address list instead.",
+          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave it empty if you are using the forwarding header above."
         },
         "description": "Choose how to match forwarded emails.\n\n**Option 1 — Forwarding header**: If your service (e.g. SimpleLogin) includes the original sender in a custom header, enter that header name. Mail and Packages will use it to match carrier addresses automatically.\n\n**Option 2 — Address list**: Enter the forwarding addresses your service assigned to each carrier, separated by commas.",
         "title": "Forwarded Email Settings"
@@ -205,10 +205,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Missing forwarded email addresses. You may enter '(none)' to clear this setting.",
+      "invalid_email_format": "Invalid email address format."
+    },
     "step": {
       "init": {
         "title": "Mail and Packages (Step 2 of 2)",
-        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.",
+        "description": "Finish the configuration by customizing the following based on your email structure and Home Assistant installation.\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.",
         "data": {
           "folder": "Mail Folder",
           "resources": "Sensors List",
@@ -249,7 +253,7 @@
       },
       "options_amazon": {
         "title": "Amazon Settings",
-        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma or enter (none) to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
+        "description": "Please enter the domain Amazon sends email's from (ie: amazon.com or amazon.de)\n\nIf using Amazon forwarded emails please separate each address with a comma. Leave the field empty to clear this setting.\n\nNote: if you configured a forwarding header in the previous step, the forwarding address field will not appear — the header handles Amazon email matching automatically.",
         "data": {
           "amazon_domain": "Amazon domain",
           "amazon_fwds": "Amazon forwarded email addresses",
@@ -271,8 +275,8 @@
           "forwarded_emails": "Forwarded Email Addresses"
         },
         "data_description": {
-          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Enter '(none)' or leave blank to use the address list instead.",
-          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave as '(none)' if using the forwarding header above."
+          "forwarding_header": "If your forwarding service includes the original sender in a header, enter the header name here. This takes precedence over the address list below. Leave it empty to use the address list instead.",
+          "forwarded_emails": "Comma-separated list of forwarded addresses messages will arrive from. Leave it empty if you are using the forwarding header above."
         }
       }
     }

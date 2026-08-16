@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon välitti sähköpostiosoitteet",
           "amazon_days": "Päiviä, joiden aikana tarkistetaan Amazonin sähköpostit"
         },
-        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai kirjoita (none) tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
+        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla. Jätä kenttä tyhjäksi tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
         "title": "Amazonin asetukset"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "Sisällytä USPS:n ei-kuvaa -paikkamerkki GIF-tiedostoon?"
         },
-        "description": "Suorita määritys loppuun mukauttamalla seuraavat sähköpostirakenteeseesi ja Home Assistant -asennukseesi perustuen.\n\nLisätietoja [Mail and Packages -integraation](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) vaihtoehdoista löydät GitHubista [määritys-, mallit- ja automaatiot-osiossa](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration).\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai syötä (none) tyhjentääksesi tämän asetuksen.",
+        "description": "Suorita määritys loppuun mukauttamalla seuraavat sähköpostirakenteeseesi ja Home Assistant -asennukseesi perustuen.\n\nLisätietoja [Mail and Packages -integraation](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) vaihtoehdoista löydät GitHubista [määritys-, mallit- ja automaatiot-osiossa](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration).\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla. Jätä kenttä tyhjäksi tyhjentääksesi tämän asetuksen.",
         "title": "Posti ja paketit (vaihe 2/2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon välitti sähköpostiosoitteet",
           "amazon_days": "Päiviä, joiden aikana tarkistetaan Amazonin sähköpostit"
         },
-        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai kirjoita (none) tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
+        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla. Jätä kenttä tyhjäksi tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
         "title": "Amazonin asetukset"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Edelleenlähetetyt sähköpostiosoitteet"
         },
         "data_description": {
-          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Syötä '(none)' tai jätä tyhjäksi käyttääksesi osoitelistaa.",
-          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä '(none)', jos käytät yllä olevaa välitysotsiketta."
+          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Jätä tyhjäksi käyttääksesi osoitelistaa.",
+          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä tyhjäksi, jos käytät yllä olevaa välitysotsiketta."
         },
         "description": "Valitse, miten välitetyt sähköpostit yhdistetään.\n\n**Vaihtoehto 1 — Välitysotsake**: Jos palvelusi (esim. SimpleLogin) sisältää alkuperäisen lähettäjän mukautetussa otsakkeessa, syötä kyseinen otsakkeen nimi. Mail and Packages käyttää sitä kuriiriosoitteiden automaattiseen yhdistämiseen.\n\n**Vaihtoehto 2 — Osoitelista**: Syötä välitysosoitteet, jotka palvelusi on määrittänyt kullekin kuriirille, pilkuilla eroteltuna.",
         "title": "Välitettyjen sähköpostien asetukset"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Edelleenlähetetyt sähköpostiosoitteet"
         },
         "data_description": {
-          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Syötä '(none)' tai jätä tyhjäksi käyttääksesi osoitelistaa.",
-          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä '(none)', jos käytät yllä olevaa välitysotsiketta."
+          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Jätä tyhjäksi käyttääksesi osoitelistaa.",
+          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä tyhjäksi, jos käytät yllä olevaa välitysotsiketta."
         },
         "description": "Valitse, miten välitetyt sähköpostit yhdistetään.\n\n**Vaihtoehto 1 — Välitysotsake**: Jos palvelusi (esim. SimpleLogin) sisältää alkuperäisen lähettäjän mukautetussa otsakkeessa, syötä kyseinen otsakkeen nimi. Mail and Packages käyttää sitä kuriiriosoitteiden automaattiseen yhdistämiseen.\n\n**Vaihtoehto 2 — Osoitelista**: Syötä välitysosoitteet, jotka palvelusi on määrittänyt kullekin kuriirille, pilkuilla eroteltuna.",
         "title": "Välitettyjen sähköpostien asetukset"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Puuttuvat edelleenlähetetyt sähköpostiosoitteet. Voit syöttää '(none)' tyhjentääksesi tämän asetuksen.",
+      "invalid_email_format": "Virheellinen sähköpostiosoitteen muoto."
+    },
     "step": {
       "init": {
         "title": "Posti ja paketit (vaihe 2/2)",
-        "description": "Suorita määritys loppuun mukauttamalla seuraavat sähköpostirakenteeseesi ja Home Assistant -asennukseesi perustuen.\n\nLisätietoja [Mail and Packages -integraation](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) vaihtoehdoista löydät GitHubista [määritys-, mallit- ja automaatiot-osiossa](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration).\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai syötä (none) tyhjentääksesi tämän asetuksen.",
+        "description": "Suorita määritys loppuun mukauttamalla seuraavat sähköpostirakenteeseesi ja Home Assistant -asennukseesi perustuen.\n\nLisätietoja [Mail and Packages -integraation](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) vaihtoehdoista löydät GitHubista [määritys-, mallit- ja automaatiot-osiossa](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration).\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla. Jätä kenttä tyhjäksi tyhjentääksesi tämän asetuksen.",
         "data": {
           "folder": "Mail-kansio",
           "resources": "Anturiluettelo",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Amazonin asetukset",
-        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla tai kirjoita (none) tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
+        "description": "Anna domaini, josta Amazon lähettää sähköposteja (esim: amazon.com tai amazon.de)\n\nJos käytät Amazonin välittämiä sähköposteja, erottele jokainen osoite pilkulla. Jätä kenttä tyhjäksi tyhjentääksesi tämän asetuksen.\n\nHuomio: jos määritit edelleenlähetyksen otsikon edellisessä vaiheessa, edelleenlähetysosoite-kenttä ei näy — otsikko käsittelee Amazon-sähköpostien täsmäytyksen automaattisesti.",
         "data": {
           "amazon_domain": "Amazonin verkkotunnus",
           "amazon_fwds": "Amazon välitti sähköpostiosoitteet",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Edelleenlähetetyt sähköpostiosoitteet"
         },
         "data_description": {
-          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Syötä '(none)' tai jätä tyhjäksi käyttääksesi osoitelistaa.",
-          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä '(none)', jos käytät yllä olevaa välitysotsiketta."
+          "forwarding_header": "Jos välityspalvelusi sisältää alkuperäisen lähettäjän otsikossa, syötä otsikon nimi tähän. Tämä ohittaa alla olevan osoitelistan. Jätä tyhjäksi käyttääksesi osoitelistaa.",
+          "forwarded_emails": "Pilkuilla eroteltu lista välitysosoitteista, joista viestit saapuvat. Jätä tyhjäksi, jos käytät yllä olevaa välitysotsiketta."
         }
       }
     }

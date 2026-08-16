@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon videresendte e-postadresser",
           "amazon_days": "Dager tilbake for å sjekke Amazon-e-poster"
         },
-        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma, eller skriv inn (ingen) for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
+        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma. La feltet stå tomt for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
         "title": "Amazon-innstillinger"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "Inkluder USPS plassholder uten bilde i GIF?"
         },
-        "description": "Fullfør konfigurasjonen ved å tilpasse følgende basert på din e-poststruktur og Home Assistant-installasjon.\n\nFor detaljer om [Mail and Packages-integrasjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativene, se gjennom [konfigurasjon, maler og automatiseringsseksjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma eller skriv inn (ingen) for å tømme denne innstillingen.",
+        "description": "Fullfør konfigurasjonen ved å tilpasse følgende basert på din e-poststruktur og Home Assistant-installasjon.\n\nFor detaljer om [Mail and Packages-integrasjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativene, se gjennom [konfigurasjon, maler og automatiseringsseksjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma. La feltet stå tomt for å tømme denne innstillingen.",
         "title": "E-post og pakker (trinn 2 av 2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon videresendte e-postadresser",
           "amazon_days": "Dager tilbake for å sjekke Amazon-e-poster"
         },
-        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma, eller skriv inn (ingen) for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
+        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma. La feltet stå tomt for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
         "title": "Amazon-innstillinger"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Videresendte e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. Skriv inn '(none)' eller la det stå tomt for å bruke adresselisten i stedet.",
-          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La '(none)' stå hvis du bruker videresendingshodet ovenfor."
+          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. La det stå tomt for å bruke adresselisten i stedet.",
+          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La det stå tomt hvis du bruker videresendingshodet ovenfor."
         },
         "description": "Velg hvordan videresendte e-poster skal matches.\n\n**Alternativ 1 — Videresendingshode**: Hvis tjenesten din (f.eks. SimpleLogin) inkluderer den opprinnelige avsenderen i et tilpasset hode, skriv inn det hodet. Mail and Packages vil bruke det til å matche fraktadresser automatisk.\n\n**Alternativ 2 — Adresseliste**: Skriv inn videresendingsadressene tjenesten din har tildelt hver fraktfører, atskilt med komma.",
         "title": "Innstillinger for videresendte e-poster"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Videresendte e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. Skriv inn '(none)' eller la det stå tomt for å bruke adresselisten i stedet.",
-          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La '(none)' stå hvis du bruker videresendingshodet ovenfor."
+          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. La det stå tomt for å bruke adresselisten i stedet.",
+          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La det stå tomt hvis du bruker videresendingshodet ovenfor."
         },
         "description": "Velg hvordan videresendte e-poster skal matches.\n\n**Alternativ 1 — Videresendingshode**: Hvis tjenesten din (f.eks. SimpleLogin) inkluderer den opprinnelige avsenderen i et tilpasset hode, skriv inn det hodet. Mail and Packages vil bruke det til å matche fraktadresser automatisk.\n\n**Alternativ 2 — Adresseliste**: Skriv inn videresendingsadressene tjenesten din har tildelt hver fraktfører, atskilt med komma.",
         "title": "Innstillinger for videresendte e-poster"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Manglende videresendte e-postadresser. Du kan skrive inn '(none)' for å tømme denne innstillingen.",
+      "invalid_email_format": "Ugyldig e-postadresseformat."
+    },
     "step": {
       "init": {
         "title": "E-post og pakker (trinn 2 av 2)",
-        "description": "Fullfør konfigurasjonen ved å tilpasse følgende basert på din e-poststruktur og Home Assistant-installasjon.\n\nFor detaljer om [Mail and Packages-integrasjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativene, se gjennom [konfigurasjon, maler og automatiseringsseksjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma eller skriv inn (ingen) for å tømme denne innstillingen.",
+        "description": "Fullfør konfigurasjonen ved å tilpasse følgende basert på din e-poststruktur og Home Assistant-installasjon.\n\nFor detaljer om [Mail and Packages-integrasjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativene, se gjennom [konfigurasjon, maler og automatiseringsseksjonen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma. La feltet stå tomt for å tømme denne innstillingen.",
         "data": {
           "folder": "E-postmappe",
           "resources": "Sensorliste",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Amazon-innstillinger",
-        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma, eller skriv inn (ingen) for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
+        "description": "Vennligst skriv inn domenet amazon sender e-poster fra (f.eks: amazon.com eller amazon.de)\n\nHvis du bruker Amazon videresendte e-poster, vennligst skill hver adresse med et komma. La feltet stå tomt for å tømme denne innstillingen.\n\nMerk: hvis du konfigurerte et videresendingshode i forrige trinn, vil feltet for videresendingsadresse ikke vises — hodet håndterer Amazon e-postkoblingen automatisk.",
         "data": {
           "amazon_domain": "Amazon-domene",
           "amazon_fwds": "Amazon videresendte e-postadresser",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Videresendte e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. Skriv inn '(none)' eller la det stå tomt for å bruke adresselisten i stedet.",
-          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La '(none)' stå hvis du bruker videresendingshodet ovenfor."
+          "forwarding_header": "Hvis videresendingstjenesten din inkluderer den opprinnelige avsenderen i en topptekst, skriv inn topptekstnavnet her. Dette har forrang over adresselisten nedenfor. La det stå tomt for å bruke adresselisten i stedet.",
+          "forwarded_emails": "Kommaseparert liste over videresendingsadresser meldinger vil komme fra. La det stå tomt hvis du bruker videresendingshodet ovenfor."
         }
       }
     }

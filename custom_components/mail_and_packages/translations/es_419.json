@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon reenvió direcciones de correo electrónico",
           "amazon_days": "Días atrás para verificar los correos electrónicos de Amazon"
         },
-        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
+        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma. Deje el campo vacío para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
         "title": "Configuración de Amazon"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "¿Incluir marcador de posición sin imagen de USPS en el GIF?"
         },
-        "description": "Finalice la configuración personalizando lo siguiente en función de la estructura de su correo electrónico y la instalación de Home Assistant.\n\nPara obtener detalles sobre las opciones de [integración de correo y paquetes](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), revise la [sección de configuración, plantillas y automatizaciones](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) en GitHub.\n\nSi utiliza correos electrónicos reenviados de Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.",
+        "description": "Finalice la configuración personalizando lo siguiente en función de la estructura de su correo electrónico y la instalación de Home Assistant.\n\nPara obtener detalles sobre las opciones de [integración de correo y paquetes](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), revise la [sección de configuración, plantillas y automatizaciones](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) en GitHub.\n\nSi utiliza correos electrónicos reenviados de Amazon, separe cada dirección con una coma. Deje el campo vacío para borrar esta configuración.",
         "title": "Correo y paquetes (Paso 2 de 2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon reenvió direcciones de correo electrónico",
           "amazon_days": "Días atrás para verificar los correos electrónicos de Amazon"
         },
-        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
+        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma. Deje el campo vacío para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
         "title": "Configuración de Amazon"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Direcciones de correo electrónico reenviadas"
         },
         "data_description": {
-          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Ingrese '(none)' o deje en blanco para usar la lista de direcciones en su lugar.",
-          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Deje '(none)' si usa la cabecera de reenvío de arriba."
+          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Déjelo vacío para usar la lista de direcciones en su lugar.",
+          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Déjelo vacío si usa la cabecera de reenvío de arriba."
         },
         "description": "Elija cómo hacer coincidir los correos electrónicos reenviados.\n\n**Opción 1 — Cabecera de reenvío**: Si su servicio (p. ej. SimpleLogin) incluye el remitente original en una cabecera personalizada, ingrese ese nombre de cabecera. Mail and Packages lo usará para hacer coincidir las direcciones de los transportistas automáticamente.\n\n**Opción 2 — Lista de direcciones**: Ingrese las direcciones de reenvío que su servicio asignó a cada transportista, separadas por comas.",
         "title": "Configuración de correos electrónicos reenviados"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Direcciones de correo electrónico reenviadas"
         },
         "data_description": {
-          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Ingrese '(none)' o deje en blanco para usar la lista de direcciones en su lugar.",
-          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Deje '(none)' si usa la cabecera de reenvío de arriba."
+          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Déjelo vacío para usar la lista de direcciones en su lugar.",
+          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Déjelo vacío si usa la cabecera de reenvío de arriba."
         },
         "description": "Elija cómo hacer coincidir los correos electrónicos reenviados.\n\n**Opción 1 — Cabecera de reenvío**: Si su servicio (p. ej. SimpleLogin) incluye el remitente original en una cabecera personalizada, ingrese ese nombre de cabecera. Mail and Packages lo usará para hacer coincidir las direcciones de los transportistas automáticamente.\n\n**Opción 2 — Lista de direcciones**: Ingrese las direcciones de reenvío que su servicio asignó a cada transportista, separadas por comas.",
         "title": "Configuración de correos electrónicos reenviados"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Faltan direcciones de correo electrónico reenviadas. Puede introducir '(none)' para borrar esta configuración.",
+      "invalid_email_format": "Formato de dirección de correo electrónico inválido."
+    },
     "step": {
       "init": {
         "title": "Correo y paquetes (Paso 2 de 2)",
-        "description": "Finalice la configuración personalizando lo siguiente en función de la estructura de su correo electrónico y la instalación de Home Assistant.\n\nPara obtener detalles sobre las opciones de [integración de correo y paquetes](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), revise la [sección de configuración, plantillas y automatizaciones](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) en GitHub.\n\nSi utiliza correos electrónicos reenviados de Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.",
+        "description": "Finalice la configuración personalizando lo siguiente en función de la estructura de su correo electrónico y la instalación de Home Assistant.\n\nPara obtener detalles sobre las opciones de [integración de correo y paquetes](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), revise la [sección de configuración, plantillas y automatizaciones](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) en GitHub.\n\nSi utiliza correos electrónicos reenviados de Amazon, separe cada dirección con una coma. Deje el campo vacío para borrar esta configuración.",
         "data": {
           "folder": "Carpeta de correo",
           "resources": "Lista de Sensores",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Configuración de Amazon",
-        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma o ingrese (ninguno) para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
+        "description": "Por favor, ingrese el dominio desde el cual Amazon envía correos electrónicos (es decir: amazon.com o amazon.de)\n\nSi utiliza correos electrónicos reenviados por Amazon, separe cada dirección con una coma. Deje el campo vacío para borrar esta configuración.\n\nNota: si configuró un encabezado de reenvío en el paso anterior, el campo de dirección de reenvío no aparecerá — el encabezado gestiona la coincidencia de correos electrónicos de Amazon automáticamente.",
         "data": {
           "amazon_domain": "Dominio de Amazon",
           "amazon_fwds": "Amazon reenvió direcciones de correo electrónico",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Direcciones de correo electrónico reenviadas"
         },
         "data_description": {
-          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Ingrese '(none)' o deje en blanco para usar la lista de direcciones en su lugar.",
-          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Deje '(none)' si usa la cabecera de reenvío de arriba."
+          "forwarding_header": "Si su servicio de reenvío incluye el remitente original en una cabecera, ingrese el nombre de la cabecera aquí. Esto tiene prioridad sobre la lista de direcciones a continuación. Déjelo vacío para usar la lista de direcciones en su lugar.",
+          "forwarded_emails": "Lista separada por comas de las direcciones de reenvío de las que llegarán los mensajes. Déjelo vacío si usa la cabecera de reenvío de arriba."
         }
       }
     }

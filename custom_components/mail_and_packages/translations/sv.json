@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon vidarebefordrade e-postadresser",
           "amazon_days": "Dagar tillbaka för att kontrollera Amazon-e-postmeddelanden"
         },
-        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
+        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken. Lämna fältet tomt för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
         "title": "Amazon-inställningar"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "Inkludera USPS platshållare utan bild i GIF?"
         },
-        "description": "Slutför konfigurationen genom att anpassa följande baserat på din e-poststruktur och Home Assistant-installation.\n\nFör detaljer om [Mail and Packages integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativen granska [konfiguration, mallar och automatiseringssektionen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nOm du använder vidarebefordrade e-postmeddelanden från Amazon, separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.",
+        "description": "Slutför konfigurationen genom att anpassa följande baserat på din e-poststruktur och Home Assistant-installation.\n\nFör detaljer om [Mail and Packages integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativen granska [konfiguration, mallar och automatiseringssektionen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nOm du använder vidarebefordrade e-postmeddelanden från Amazon, separera varje adress med ett kommatecken. Lämna fältet tomt för att rensa denna inställning.",
         "title": "Mail och paket (steg 2 av 2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon vidarebefordrade e-postadresser",
           "amazon_days": "Dagar tillbaka för att kontrollera Amazon-e-postmeddelanden"
         },
-        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
+        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken. Lämna fältet tomt för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
         "title": "Amazon-inställningar"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Vidarebefordrade e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Ange '(none)' eller lämna tomt för att använda adresslistan istället.",
-          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna '(none)' om du använder vidarebefordringshuvudet ovan."
+          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Lämna tomt för att använda adresslistan istället.",
+          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna tomt om du använder vidarebefordringshuvudet ovan."
         },
         "description": "Välj hur vidarebefordrade e-postmeddelanden ska matchas.\n\n**Alternativ 1 — Vidarebefordringshuvud**: Om din tjänst (t.ex. SimpleLogin) inkluderar den ursprungliga avsändaren i ett anpassat huvud, ange det huvud-namnet. Mail and Packages kommer att använda det för att automatiskt matcha transportörernas adresser.\n\n**Alternativ 2 — Adresslista**: Ange de vidarebefordringsadresser som din tjänst har tilldelat varje transportör, separerade med kommatecken.",
         "title": "Inställningar för vidarebefordrade e-postmeddelanden"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Vidarebefordrade e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Ange '(none)' eller lämna tomt för att använda adresslistan istället.",
-          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna '(none)' om du använder vidarebefordringshuvudet ovan."
+          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Lämna tomt för att använda adresslistan istället.",
+          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna tomt om du använder vidarebefordringshuvudet ovan."
         },
         "description": "Välj hur vidarebefordrade e-postmeddelanden ska matchas.\n\n**Alternativ 1 — Vidarebefordringshuvud**: Om din tjänst (t.ex. SimpleLogin) inkluderar den ursprungliga avsändaren i ett anpassat huvud, ange det huvud-namnet. Mail and Packages kommer att använda det för att automatiskt matcha transportörernas adresser.\n\n**Alternativ 2 — Adresslista**: Ange de vidarebefordringsadresser som din tjänst har tilldelat varje transportör, separerade med kommatecken.",
         "title": "Inställningar för vidarebefordrade e-postmeddelanden"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Saknade vidarebefordrade e-postadresser. Du kan ange '(none)' för att rensa denna inställning.",
+      "invalid_email_format": "Ogiltigt format för e-postadress."
+    },
     "step": {
       "init": {
         "title": "Mail och paket (steg 2 av 2)",
-        "description": "Slutför konfigurationen genom att anpassa följande baserat på din e-poststruktur och Home Assistant-installation.\n\nFör detaljer om [Mail and Packages integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativen granska [konfiguration, mallar och automatiseringssektionen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nOm du använder vidarebefordrade e-postmeddelanden från Amazon, separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.",
+        "description": "Slutför konfigurationen genom att anpassa följande baserat på din e-poststruktur och Home Assistant-installation.\n\nFör detaljer om [Mail and Packages integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) alternativen granska [konfiguration, mallar och automatiseringssektionen](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) på GitHub.\n\nOm du använder vidarebefordrade e-postmeddelanden från Amazon, separera varje adress med ett kommatecken. Lämna fältet tomt för att rensa denna inställning.",
         "data": {
           "folder": "E-postmapp",
           "resources": "Sensorlista",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Amazon-inställningar",
-        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken eller ange (ingen) för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
+        "description": "Vänligen ange domänen som Amazon skickar e-postmeddelanden från (t.ex: amazon.com eller amazon.de)\n\nOm du använder Amazon vidarebefordrade e-postmeddelanden, vänligen separera varje adress med ett kommatecken. Lämna fältet tomt för att rensa denna inställning.\n\nObs: om du konfigurerade ett vidarebefordringshuvud i föregående steg kommer fältet för vidarebefordringsadress inte att visas — huvudet hanterar Amazon e-postkopplingen automatiskt.",
         "data": {
           "amazon_domain": "Amazon domän",
           "amazon_fwds": "Amazon vidarebefordrade e-postadresser",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Vidarebefordrade e-postadresser"
         },
         "data_description": {
-          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Ange '(none)' eller lämna tomt för att använda adresslistan istället.",
-          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna '(none)' om du använder vidarebefordringshuvudet ovan."
+          "forwarding_header": "Om din vidarebefordringstjänst inkluderar den ursprungliga avsändaren i ett huvud, ange huvud-namnet här. Detta har företräde framför adresslistan nedan. Lämna tomt för att använda adresslistan istället.",
+          "forwarded_emails": "Kommaseparerad lista över vidarebefordringsadresser som meddelanden kommer att anlända från. Lämna tomt om du använder vidarebefordringshuvudet ovan."
         }
       }
     }

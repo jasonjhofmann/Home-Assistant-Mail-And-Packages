@@ -62,7 +62,7 @@
           "amazon_fwds": "Amazon hat E-Mail-Adressen weitergeleitet",
           "amazon_days": "Tage zurück, um nach Amazon-E-Mails zu suchen"
         },
-        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
+        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma. Lassen Sie das Feld leer, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
         "title": "Amazon Einstellungen"
       },
       "reconfig_2": {
@@ -88,7 +88,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "USPS-Platzhalter ohne Bild im GIF einschließen?"
         },
-        "description": "Schließen Sie die Konfiguration ab, indem Sie das Folgende an Ihre E-Mail-Struktur und Home Assistant-Installation anpassen.\n\nWeitere Informationen zu den [Mail und Packages Integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) Optionen finden Sie im [Konfigurations-, Vorlagen- und Automatisierungsabschnitt](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) auf GitHub.\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse durch ein Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.",
+        "description": "Schließen Sie die Konfiguration ab, indem Sie das Folgende an Ihre E-Mail-Struktur und Home Assistant-Installation anpassen.\n\nWeitere Informationen zu den [Mail und Packages Integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) Optionen finden Sie im [Konfigurations-, Vorlagen- und Automatisierungsabschnitt](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) auf GitHub.\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse durch ein Komma. Lassen Sie das Feld leer, um diese Einstellung zu löschen.",
         "title": "Briefe und Pakete (Schritt 2 von 2)"
       },
       "reconfig_3": {
@@ -109,7 +109,7 @@
           "amazon_fwds": "Amazon hat E-Mail-Adressen weitergeleitet",
           "amazon_days": "Tage zurück, um nach Amazon-E-Mails zu suchen"
         },
-        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
+        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma. Lassen Sie das Feld leer, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
         "title": "Amazon Einstellungen"
       },
       "config_storage": {
@@ -132,8 +132,8 @@
           "forwarded_emails": "Weitergeleitete E-Mail-Adressen"
         },
         "data_description": {
-          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Geben Sie '(none)' ein oder lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
-          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie '(none)' stehen, wenn Sie den Weiterleitungs-Header oben verwenden."
+          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
+          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie das Feld leer, wenn Sie den Weiterleitungs-Header oben verwenden."
         },
         "description": "Wählen Sie, wie weitergeleitete E-Mails abgeglichen werden sollen.\n\n**Option 1 — Weiterleitungs-Header**: Wenn Ihr Dienst (z.B. SimpleLogin) den ursprünglichen Absender in einem benutzerdefinierten Header enthält, geben Sie diesen Header-Namen ein. Mail and Packages verwendet ihn, um Zustell-Adressen automatisch abzugleichen.\n\n**Option 2 — Adressliste**: Geben Sie die Weiterleitungsadressen ein, die Ihr Dienst jedem Zusteller zugewiesen hat, getrennt durch Kommas.",
         "title": "Einstellungen für weitergeleitete E-Mails"
@@ -144,8 +144,8 @@
           "forwarded_emails": "Weitergeleitete E-Mail-Adressen"
         },
         "data_description": {
-          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Geben Sie '(none)' ein oder lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
-          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie '(none)' stehen, wenn Sie den Weiterleitungs-Header oben verwenden."
+          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
+          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie das Feld leer, wenn Sie den Weiterleitungs-Header oben verwenden."
         },
         "description": "Wählen Sie, wie weitergeleitete E-Mails abgeglichen werden sollen.\n\n**Option 1 — Weiterleitungs-Header**: Wenn Ihr Dienst (z.B. SimpleLogin) den ursprünglichen Absender in einem benutzerdefinierten Header enthält, geben Sie diesen Header-Namen ein. Mail and Packages verwendet ihn, um Zustell-Adressen automatisch abzugleichen.\n\n**Option 2 — Adressliste**: Geben Sie die Weiterleitungsadressen ein, die Ihr Dienst jedem Zusteller zugewiesen hat, getrennt durch Kommas.",
         "title": "Einstellungen für weitergeleitete E-Mails"
@@ -221,10 +221,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Fehlende weitergeleitete E-Mail-Adressen. Sie können '(none)' eingeben, um diese Einstellung zu löschen.",
+      "invalid_email_format": "Ungültiges E-Mail-Adressformat."
+    },
     "step": {
       "init": {
         "title": "Briefe und Pakete (Schritt 2 von 2)",
-        "description": "Schließen Sie die Konfiguration ab, indem Sie das Folgende an Ihre E-Mail-Struktur und Home Assistant-Installation anpassen.\n\nWeitere Informationen zu den [Mail und Packages Integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) Optionen finden Sie im [Konfigurations-, Vorlagen- und Automatisierungsabschnitt](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) auf GitHub.\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse durch ein Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.",
+        "description": "Schließen Sie die Konfiguration ab, indem Sie das Folgende an Ihre E-Mail-Struktur und Home Assistant-Installation anpassen.\n\nWeitere Informationen zu den [Mail und Packages Integration](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) Optionen finden Sie im [Konfigurations-, Vorlagen- und Automatisierungsabschnitt](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) auf GitHub.\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse durch ein Komma. Lassen Sie das Feld leer, um diese Einstellung zu löschen.",
         "data": {
           "folder": "E-Mail-Ordner",
           "resources": "Sensoren Liste",
@@ -262,7 +266,7 @@
       },
       "options_amazon": {
         "title": "Amazon Einstellungen",
-        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma oder geben Sie (keine) ein, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
+        "description": "Bitte geben Sie die Domain ein, von der Amazon E-Mails sendet (z.B.: amazon.com oder amazon.de)\n\nWenn Sie weitergeleitete E-Mails von Amazon verwenden, trennen Sie bitte jede Adresse mit einem Komma. Lassen Sie das Feld leer, um diese Einstellung zu löschen.\n\nHinweis: Wenn Sie im vorherigen Schritt einen Weiterleitungs-Header konfiguriert haben, wird das Feld für die Weiterleitungsadresse nicht angezeigt — der Header übernimmt die Zuordnung von Amazon-E-Mails automatisch.",
         "data": {
           "amazon_domain": "Amazon-Domain",
           "amazon_fwds": "Amazon hat E-Mail-Adressen weitergeleitet",
@@ -284,8 +288,8 @@
           "forwarded_emails": "Weitergeleitete E-Mail-Adressen"
         },
         "data_description": {
-          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Geben Sie '(none)' ein oder lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
-          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie '(none)' stehen, wenn Sie den Weiterleitungs-Header oben verwenden."
+          "forwarding_header": "Wenn Ihr Weiterleitungsdienst den ursprünglichen Absender in einem Header enthält, geben Sie hier den Header-Namen ein. Dies hat Vorrang vor der Adressliste unten. Lassen Sie das Feld leer, um stattdessen die Adressliste zu verwenden.",
+          "forwarded_emails": "Kommagetrennte Liste der Weiterleitungsadressen, von denen Nachrichten eingehen. Lassen Sie das Feld leer, wenn Sie den Weiterleitungs-Header oben verwenden."
         }
       }
     }

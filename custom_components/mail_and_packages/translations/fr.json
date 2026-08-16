@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon a transmis des adresses e-mail",
           "amazon_days": "Jours en arrière pour vérifier les emails Amazon"
         },
-        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
+        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule. Laissez le champ vide pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
         "title": "Paramètres Amazon"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "Inclure l'image d'emplacement sans image USPS dans le GIF ?"
         },
-        "description": "Terminez la configuration en personnalisant ce qui suit en fonction de la structure de votre courrier électronique et de l'installation de Home Assistant.\n\nPour plus de détails sur les options d'[intégration de courrier et de colis](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), consultez la [section configuration, modèles et automatisations](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) sur GitHub.\n\nSi vous utilisez des courriels transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.",
+        "description": "Terminez la configuration en personnalisant ce qui suit en fonction de la structure de votre courrier électronique et de l'installation de Home Assistant.\n\nPour plus de détails sur les options d'[intégration de courrier et de colis](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), consultez la [section configuration, modèles et automatisations](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) sur GitHub.\n\nSi vous utilisez des courriels transférés par Amazon, veuillez séparer chaque adresse par une virgule. Laissez le champ vide pour effacer ce paramètre.",
         "title": "Courrier et colis (étape 2 sur 2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon a transmis des adresses e-mail",
           "amazon_days": "Jours en arrière pour vérifier les emails Amazon"
         },
-        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
+        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule. Laissez le champ vide pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
         "title": "Paramètres Amazon"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Adresses e-mail transférées"
         },
         "data_description": {
-          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Entrez '(none)' ou laissez vide pour utiliser la liste d'adresses à la place.",
-          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez '(none)' si vous utilisez l'en-tête de transfert ci-dessus."
+          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Laissez vide pour utiliser la liste d'adresses à la place.",
+          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez vide si vous utilisez l'en-tête de transfert ci-dessus."
         },
         "description": "Choisissez comment faire correspondre les e-mails transférés.\n\n**Option 1 — En-tête de transfert** : Si votre service (ex. SimpleLogin) inclut l'expéditeur original dans un en-tête personnalisé, entrez ce nom d'en-tête. Mail and Packages l'utilisera pour faire correspondre automatiquement les adresses des transporteurs.\n\n**Option 2 — Liste d'adresses** : Entrez les adresses de transfert que votre service a attribuées à chaque transporteur, séparées par des virgules.",
         "title": "Paramètres des e-mails transférés"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Adresses e-mail transférées"
         },
         "data_description": {
-          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Entrez '(none)' ou laissez vide pour utiliser la liste d'adresses à la place.",
-          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez '(none)' si vous utilisez l'en-tête de transfert ci-dessus."
+          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Laissez vide pour utiliser la liste d'adresses à la place.",
+          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez vide si vous utilisez l'en-tête de transfert ci-dessus."
         },
         "description": "Choisissez comment faire correspondre les e-mails transférés.\n\n**Option 1 — En-tête de transfert** : Si votre service (ex. SimpleLogin) inclut l'expéditeur original dans un en-tête personnalisé, entrez ce nom d'en-tête. Mail and Packages l'utilisera pour faire correspondre automatiquement les adresses des transporteurs.\n\n**Option 2 — Liste d'adresses** : Entrez les adresses de transfert que votre service a attribuées à chaque transporteur, séparées par des virgules.",
         "title": "Paramètres des e-mails transférés"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Adresses e-mail de transfert manquantes. Vous pouvez entrer '(none)' pour effacer ce paramètre.",
+      "invalid_email_format": "Format d'adresse e-mail invalide."
+    },
     "step": {
       "init": {
         "title": "Courrier et colis (étape 2 sur 2)",
-        "description": "Terminez la configuration en personnalisant ce qui suit en fonction de la structure de votre courrier électronique et de l'installation de Home Assistant.\n\nPour plus de détails sur les options d'[intégration de courrier et de colis](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), consultez la [section configuration, modèles et automatisations](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) sur GitHub.\n\nSi vous utilisez des courriels transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.",
+        "description": "Terminez la configuration en personnalisant ce qui suit en fonction de la structure de votre courrier électronique et de l'installation de Home Assistant.\n\nPour plus de détails sur les options d'[intégration de courrier et de colis](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration), consultez la [section configuration, modèles et automatisations](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) sur GitHub.\n\nSi vous utilisez des courriels transférés par Amazon, veuillez séparer chaque adresse par une virgule. Laissez le champ vide pour effacer ce paramètre.",
         "data": {
           "folder": "Dossier de messagerie",
           "resources": "Liste des capteurs",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Paramètres Amazon",
-        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule ou entrer (aucun) pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
+        "description": "Veuillez entrer le domaine à partir duquel Amazon envoie des emails (par exemple : amazon.com ou amazon.de)\n\nSi vous utilisez des emails transférés par Amazon, veuillez séparer chaque adresse par une virgule. Laissez le champ vide pour effacer ce paramètre.\n\nRemarque : si vous avez configuré un en-tête de transfert dans l'étape précédente, le champ d'adresse de transfert n'apparaîtra pas — l'en-tête gère automatiquement la correspondance des e-mails Amazon.",
         "data": {
           "amazon_domain": "Domaine Amazon",
           "amazon_fwds": "Amazon a transmis des adresses e-mail",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Adresses e-mail transférées"
         },
         "data_description": {
-          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Entrez '(none)' ou laissez vide pour utiliser la liste d'adresses à la place.",
-          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez '(none)' si vous utilisez l'en-tête de transfert ci-dessus."
+          "forwarding_header": "Si votre service de transfert inclut l'expéditeur original dans un en-tête, entrez le nom de l'en-tête ici. Cela a la priorité sur la liste d'adresses ci-dessous. Laissez vide pour utiliser la liste d'adresses à la place.",
+          "forwarded_emails": "Liste séparée par des virgules des adresses de transfert dont proviendront les messages. Laissez vide si vous utilisez l'en-tête de transfert ci-dessus."
         }
       }
     }

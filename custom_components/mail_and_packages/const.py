@@ -104,7 +104,7 @@ DEFAULT_SCAN_INTERVAL = 30
 DEFAULT_CUSTOM_DAYS = 3
 MAX_TRACKING_AGE_DAYS = 14
 DEFAULT_GIF_FILE_NAME = "mail_today.gif"
-DEFAULT_AMAZON_FWDS = "(none)"
+DEFAULT_AMAZON_FWDS = ""
 DEFAULT_ALLOW_EXTERNAL = False
 DEFAULT_CUSTOM_IMG = False
 DEFAULT_CUSTOM_IMG_FILE = "custom_components/mail_and_packages/mail_none.gif"
@@ -139,9 +139,16 @@ DEFAULT_AMAZON_DOMAIN = "amazon.com"
 DEFAULT_STORAGE = "custom_components/mail_and_packages/images/"
 
 DEFAULT_ALLOW_FORWARDED_EMAILS = False
-DEFAULT_FORWARDED_EMAILS = "(none)"
-DEFAULT_FORWARDING_HEADER = "(none)"
+DEFAULT_FORWARDED_EMAILS = ""
+DEFAULT_FORWARDING_HEADER = ""
 DEFAULT_USPS_PLACEHOLDER = True
+
+# Users once had to type this literal string to clear an optional text field,
+# because an emptied field could not be distinguished from an unsubmitted one.
+# Emptying the field now works, but the sentinel is still accepted on input and
+# still recognised in stored config — it is documented in the wiki and existing
+# entries contain it.
+LEGACY_EMPTY_SENTINEL = "(none)"
 
 # Amazon
 AMAZON_DOMAINS = [

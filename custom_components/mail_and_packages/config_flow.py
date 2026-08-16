@@ -97,7 +97,7 @@ from .const import (
     OAUTH_IMAP_DEFAULTS,
     OAUTH_SCOPES,
 )
-from .helpers import get_resources
+from .helpers import get_resources, is_empty_config_value
 from .utils.email import generate_service_email_domains, validate_email_address
 from .utils.image import _check_ffmpeg
 from .utils.imap import InvalidAuth, decode_imap_utf7, login, logout
@@ -115,6 +115,92 @@ AMAZON_EMAIL_ERROR = (
     "Amazon domain found in email: %s, this may cause errors when searching emails."
 )
 FORWARDED_EMAIL_ERROR = "A service domain was found in email: %s, this may cause errors when searching emails."  # pylint: disable=line-too-long
+
+# Clearing an optional text field used to be impossible: the frontend omits an
+# emptied optional field from the submission, so voluptuous re-injected the
+# schema default and silently restored the value the user had just deleted. The
+# schemas now pre-fill with "suggested_value" instead of "default", so a cleared
+# field arrives as a missing key. The retired "(none)" sentinel is still accepted
+# on input for the users who learned it — see helpers.is_empty_config_value.
+
+
+def _normalize_cleared_field(user_input: dict, key: str, empty: Any) -> None:
+    """Collapse a missing/blank/legacy-sentinel submission to the canonical empty value.
+
+    Always assigns the empty value rather than popping the key. The effective
+    config is ``{**entry.data, **entry.options}`` and the options flow writes
+    only options, so removing the key there just unshadows the stale value still
+    sitting in entry.data and loses the clear all over again.
+    """
+    if key in user_input and not is_empty_config_value(user_input[key]):
+        return
+    user_input[key] = empty
+
+
+def _mark_forwarded_emails_submitted(user_input: dict) -> None:
+    """Record an emptied forwarded-addresses box as an explicit blank.
+
+    Unlike the other optional text fields, CONF_FORWARDED_EMAILS is only rendered
+    while the allow-forwarded-emails toggle is on, so submitting it empty is a
+    genuine user error rather than a clear and has to keep raising
+    missing_forwarded_emails. The frontend omits an emptied optional field
+    entirely, so the omission must be made explicit or validation would silently
+    keep whatever was stored. Clearing this setting is done by unticking the
+    toggle, or by the legacy "(none)" the error message points at.
+    """
+    user_input.setdefault(CONF_FORWARDED_EMAILS, "")
+
+
+def _suggested_text(value: Any) -> str:
+    """Render a stored optional-text setting for the form's suggested value.
+
+    Args:
+        value (Any): The stored value, which may be a list, a blank, or a
+            legacy ``(none)`` sentinel.
+
+    Returns:
+        str: The text to pre-fill the box with — empty for anything that means
+            "no value", so a legacy stored sentinel is offered as an empty box
+            instead of re-prefilling the retired spelling to exactly the users
+            the back-compat targets; comma-joined for the settings that are
+            stored as a list but edited as text.
+
+    """
+    if is_empty_config_value(value):
+        return ""
+    if isinstance(value, (list, tuple)):
+        return ", ".join(value)
+    return str(value)
+
+
+def _errors_for_step(errors: dict, schema: vol.Schema) -> dict:
+    """Keep only the errors the form being shown is able to display.
+
+    ``_validate_user_input`` validates the whole merged config, not just the
+    fields of the step that called it. In the options flow that config is
+    everything the entry already holds, so a setting saved in an earlier session
+    — a custom image file that has since been deleted, a storage directory that
+    no longer exists — comes back as an error keyed to a field this step does
+    not render.
+
+    Home Assistant renders a field error only against a field present in the
+    form's schema (frontend `renderShowFormStepFieldError`), so returning one of
+    those would redisplay the form with no visible message and no way forward:
+    the user is trapped in a loop. Dropping them lets the flow advance to the
+    step that owns the field, where the very same check raises the error against
+    a box the user can actually see and fix.
+
+    Args:
+        errors (dict): Error codes keyed by config key, from _validate_user_input.
+        schema (vol.Schema): The schema of the form about to be shown.
+
+    Returns:
+        dict: The subset of ``errors`` this form can render.
+
+    """
+    # "base" is not a field; HA renders it above the form, so it is always shown.
+    fields = {"base"} | {getattr(marker, "schema", marker) for marker in schema.schema}
+    return {key: error for key, error in errors.items() if key in fields}
 
 
 async def _check_amazon_forwards(forwards: str, domain: str) -> tuple:
@@ -266,6 +352,13 @@ async def _validate_amazon_fwds(user_input: dict, errors: dict) -> None:
         user_input[CONF_AMAZON_FWDS],
         user_input[CONF_AMAZON_DOMAIN],
     )
+    if isinstance(amazon_list, str):
+        # _check_amazon_forwards echoes the raw comma-separated text back when it
+        # accepts it, and only substitutes [] for a blank. Store one type either
+        # way: generate_service_email_domains() iterates this value, so a string
+        # would make it walk characters instead of addresses and silently skip
+        # the service-domain collision check.
+        amazon_list = [e.strip() for e in amazon_list.split(",") if e.strip()]
     user_input[CONF_AMAZON_FWDS] = amazon_list
     if status[0] != "ok":
         errors[CONF_AMAZON_FWDS] = status[0]
@@ -279,15 +372,43 @@ async def _validate_forwarded_emails(user_input: dict, errors: dict) -> None:
         return
     status = await _check_forwarded_emails(user_input)
     if status[0] == "ok" and user_input[CONF_FORWARDED_EMAILS] == "(none)":
-        # the user changed their mind, remove the flag and config entry
+        # the user changed their mind, remove the flag and clear the addresses.
+        # Store [] rather than dropping the key: the options flow writes only
+        # entry.options, so a dropped key unshadows the stale entry.data value.
         user_input[CONF_ALLOW_FORWARDED_EMAILS] = False
-        del user_input[CONF_FORWARDED_EMAILS]
+        user_input[CONF_FORWARDED_EMAILS] = []
     elif status[0] == "ok":
         user_input[CONF_FORWARDED_EMAILS] = [
             e.strip() for e in user_input[CONF_FORWARDED_EMAILS].split(",") if e.strip()
         ]
     else:
         errors[CONF_FORWARDED_EMAILS] = status[0]
+
+
+async def _validate_forwarding_mode(user_input: dict, errors: dict) -> None:
+    """Apply forwarding-header precedence, then validate the address list.
+
+    A configured header supersedes the address list, so exactly one of the two
+    survives. Both branches overwrite in place instead of popping: the effective
+    config is ``{**entry.data, **entry.options}`` and the options flow writes
+    only options, so removing a key there would merely unshadow the stale value
+    still sitting in entry.data.
+    """
+    forwarding_header = user_input.get(CONF_FORWARDING_HEADER, "")
+    if isinstance(forwarding_header, str):
+        forwarding_header = forwarding_header.strip()
+
+    if not is_empty_config_value(forwarding_header):
+        # Header mode: store the header name, clear the address list if present
+        user_input[CONF_FORWARDING_HEADER] = forwarding_header
+        if CONF_FORWARDED_EMAILS in user_input:
+            user_input[CONF_FORWARDED_EMAILS] = []
+        return
+
+    # No header provided — clear it and fall through to address list validation
+    if CONF_FORWARDING_HEADER in user_input:
+        user_input[CONF_FORWARDING_HEADER] = ""
+    await _validate_forwarded_emails(user_input, errors)
 
 
 async def _validate_user_input(
@@ -301,18 +422,7 @@ async def _validate_user_input(
 
     await _validate_amazon_fwds(user_input, errors)
 
-    # Check for forwarding header mode first — it takes precedence over address list
-    forwarding_header = user_input.get(CONF_FORWARDING_HEADER, "")
-    if isinstance(forwarding_header, str):
-        forwarding_header = forwarding_header.strip()
-    if forwarding_header and forwarding_header not in ("(none)", ""):
-        # Header mode: store the header name, clear address list if present
-        user_input[CONF_FORWARDING_HEADER] = forwarding_header
-        user_input.pop(CONF_FORWARDED_EMAILS, None)
-    else:
-        # No header provided — clear the key and fall through to address list validation
-        user_input.pop(CONF_FORWARDING_HEADER, None)
-        await _validate_forwarded_emails(user_input, errors)
+    await _validate_forwarding_mode(user_input, errors)
 
     # Check for ffmpeg if option enabled
     if user_input[CONF_GENERATE_MP4]:
@@ -766,11 +876,15 @@ def _get_schema_step_amazon(
         ): cv.string,
     }
 
-    if not forwarding_header or forwarding_header == "(none)":
+    if is_empty_config_value(forwarding_header):
         schema_dict[
             vol.Optional(
                 CONF_AMAZON_FWDS,
-                default=_get_default(CONF_AMAZON_FWDS),
+                description={
+                    "suggested_value": _suggested_text(
+                        _get_default(CONF_AMAZON_FWDS, DEFAULT_AMAZON_FWDS)
+                    )
+                },
             )
         ] = cv.string
 
@@ -791,20 +905,25 @@ def _get_schema_step_forwarded_emails(
 
     def _get_default(key: str, fallback_default: Any = None) -> list:
         """Get default value for key."""
-        value = user_input.get(key, default_dict.get(key, fallback_default))
-        if isinstance(value, list):
-            value = ", ".join(value)
-        return value
+        return user_input.get(key, default_dict.get(key, fallback_default))
 
     return vol.Schema(
         {
             vol.Optional(
                 CONF_FORWARDING_HEADER,
-                default=_get_default(CONF_FORWARDING_HEADER, DEFAULT_FORWARDING_HEADER),
+                description={
+                    "suggested_value": _suggested_text(
+                        _get_default(CONF_FORWARDING_HEADER, DEFAULT_FORWARDING_HEADER)
+                    )
+                },
             ): cv.string,
             vol.Optional(
                 CONF_FORWARDED_EMAILS,
-                default=_get_default(CONF_FORWARDED_EMAILS, DEFAULT_FORWARDED_EMAILS),
+                description={
+                    "suggested_value": _suggested_text(
+                        _get_default(CONF_FORWARDED_EMAILS, DEFAULT_FORWARDED_EMAILS)
+                    )
+                },
             ): cv.string,
         },
     )
@@ -1163,6 +1282,12 @@ class MailAndPackagesFlowHandler(
         """Configure form step amazon."""
         self._errors = {}
         if user_input is not None:
+            # CONF_AMAZON_FWDS is only rendered when no forwarding header is set
+            # (mirrors _get_schema_step_amazon). In header mode a missing key means
+            # "not on the form", not "cleared" — normalizing it would silently wipe
+            # the stored addresses. Keep this guard in sync with the schema builder.
+            if is_empty_config_value(self._data.get(CONF_FORWARDING_HEADER, "")):
+                _normalize_cleared_field(user_input, CONF_AMAZON_FWDS, [])
             self._data.update(user_input)
             self._errors, user_input = await _validate_user_input(self._data, self.hass)
             if len(self._errors) == 0:
@@ -1204,6 +1329,8 @@ class MailAndPackagesFlowHandler(
         """Configure form step forwarded emails."""
         self._errors = {}
         if user_input is not None:
+            _normalize_cleared_field(user_input, CONF_FORWARDING_HEADER, "")
+            _mark_forwarded_emails_submitted(user_input)
             self._data.update(user_input)
             self._errors, user_input = await _validate_user_input(self._data, self.hass)
             if len(self._errors) == 0:
@@ -1439,9 +1566,6 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
 
     async def _show_options_2(self, user_input):
         """Step 2 of options."""
-        if self._data.get(CONF_AMAZON_FWDS) == []:
-            self._data[CONF_AMAZON_FWDS] = "(none)"
-
         return self.async_show_form(
             step_id="init",
             data_schema=await _get_schema_step_2(
@@ -1454,9 +1578,22 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
         """Configure forwarded emails."""
         self._errors = {}
         if user_input is not None:
-            if user_input.get(CONF_FORWARDED_EMAILS) == "(none)":
-                user_input[CONF_FORWARDED_EMAILS] = []
+            _normalize_cleared_field(user_input, CONF_FORWARDING_HEADER, "")
+            _mark_forwarded_emails_submitted(user_input)
             self._data.update(user_input)
+            # Validate here, like the config flow twin does. The later steps also
+            # call _validate_user_input, but their forms have no forwarded_emails
+            # box to attach the error to, so the user would dead-end there.
+            errors, user_input = await _validate_user_input(self._data, self.hass)
+            # Unlike the config flow, self._data here is the entry's whole saved
+            # config, so validation also reports on settings this form does not
+            # render — a deleted custom image file, a missing storage directory.
+            # Reporting those here would trap the user (see _errors_for_step);
+            # they resurface on the step that owns them. The schema is rebuilt
+            # only for its field names, so the values fed to it are irrelevant.
+            self._errors = _errors_for_step(
+                errors, _get_schema_step_forwarded_emails(None, {})
+            )
             if len(self._errors) == 0:
                 if any(
                     sensor in self._data[CONF_RESOURCES] for sensor in AMAZON_SENSORS
@@ -1469,9 +1606,6 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
 
     async def _show_options_forwarded_emails(self, user_input=None):
         """Step forwarded emails."""
-        if self._data.get(CONF_FORWARDED_EMAILS, []) == []:
-            self._data[CONF_FORWARDED_EMAILS] = "(none)"
-
         return self.async_show_form(
             step_id="options_forwarded_emails",
             data_schema=_get_schema_step_forwarded_emails(user_input, self._data),
@@ -1482,8 +1616,10 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
         """Configure amazon options."""
         self._errors = {}
         if user_input is not None:
-            if user_input.get(CONF_AMAZON_FWDS) == "(none)":
-                user_input[CONF_AMAZON_FWDS] = []
+            # See async_step_config_amazon: only normalize when the field was
+            # actually rendered, otherwise header mode wipes the stored addresses.
+            if is_empty_config_value(self._data.get(CONF_FORWARDING_HEADER, "")):
+                _normalize_cleared_field(user_input, CONF_AMAZON_FWDS, [])
             self._data.update(user_input)
             self._errors, user_input = await _validate_user_input(self._data, self.hass)
             if len(self._errors) == 0:
@@ -1495,9 +1631,6 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
 
     async def _show_options_amazon(self, user_input):
         """Step Amazon setup."""
-        if self._data.get(CONF_AMAZON_FWDS) == []:
-            self._data[CONF_AMAZON_FWDS] = "(none)"
-
         return self.async_show_form(
             step_id="options_amazon",
             data_schema=_get_schema_step_amazon(

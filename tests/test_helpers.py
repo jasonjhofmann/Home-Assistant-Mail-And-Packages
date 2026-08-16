@@ -11,6 +11,7 @@ from custom_components.mail_and_packages.helpers import (
     get_items,
     get_mails,
     get_resources,
+    is_empty_config_value,
 )
 
 
@@ -143,3 +144,33 @@ def test_copy_images_logic(mock_walk, mock_copy, mock_path, hass):
 
     assert mock_path_obj.mkdir.called
     assert mock_copy.called
+
+
+@pytest.mark.parametrize(
+    ("value", "empty"),
+    [
+        # Blank spellings and the retired "(none)" sentinel, however typed.
+        ("", True),
+        ("   ", True),
+        ('""', True),
+        ("(none)", True),
+        ("  (NONE) ", True),
+        ("'(None)'", True),
+        ('"(none)"', True),
+        (None, True),
+        # Collections: empty, or holding nothing but sentinels.
+        ([], True),
+        (["(none)"], True),
+        # Real values survive untouched. A bare "none" is deliberately not
+        # matched: it is a plausible real forwarding header name.
+        ("none", False),
+        ("X-Forwarded-For", False),
+        ("fwd@example.com", False),
+        (["fwd@example.com"], False),
+        (["fwd@example.com", "(none)"], False),
+        (3, False),
+    ],
+)
+def test_is_empty_config_value(value, empty):
+    """Test which submitted or stored values count as "no value"."""
+    assert is_empty_config_value(value) is empty

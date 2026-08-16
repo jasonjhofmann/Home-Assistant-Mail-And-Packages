@@ -22,6 +22,7 @@ from .const import (
     ATTR_TRACKING,
     BINARY_SENSORS,
     CONF_PATH,
+    LEGACY_EMPTY_SENTINEL,
     SENSOR_TYPES,
 )
 from .shippers import SHIPPER_REGISTRY
@@ -39,6 +40,40 @@ amazon_hub = AMAZON_HUB_SUBJECT
 amazon_otp = AMAZON_OTP_SUBJECT
 amazon_search_legacy = AMAZON_DELIVERED_SUBJECT
 image_file_name = "mail_today.gif"
+
+# Spellings that mean "no value" for an optional text setting.
+_EMPTY_VALUES = frozenset({"", LEGACY_EMPTY_SENTINEL})
+
+
+def is_empty_config_value(value: Any) -> bool:
+    """Return True when a config value means "no value".
+
+    Single definition shared by everything that has to answer that question:
+    the config flow deciding whether a submitted text box was cleared, the
+    schema builders deciding what to pre-fill, and the runtime normalisation in
+    ``__init__`` deciding whether a stored value is the retired sentinel. Two
+    separate predicates previously disagreed — one called ``["(none)"]`` empty
+    and ``[]`` not, the other the exact opposite.
+
+    Args:
+        value (Any): A submitted or stored configuration value.
+
+    Returns:
+        bool: `True` for a blank string, the retired ``(none)`` sentinel in any
+            of its quoted/spaced/cased spellings, `None`, an empty collection,
+            or a collection whose every element is itself empty.
+
+    """
+    if value is None:
+        return True
+    if isinstance(value, str):
+        # Tolerate the quoted legacy forms ('""', "'(none)'") plus stray spacing
+        # and casing. A bare "none" is deliberately NOT matched: it is a
+        # plausible real header name.
+        return value.strip().strip("\"'").strip().casefold() in _EMPTY_VALUES
+    if isinstance(value, (list, tuple, set)):
+        return all(is_empty_config_value(item) for item in value)
+    return False
 
 
 async def get_count(

@@ -60,7 +60,7 @@
           "amazon_fwds": "Amazon ha inoltrato gli indirizzi email",
           "amazon_days": "Giorni precedenti da controllare per le email di Amazon"
         },
-        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
+        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola. Lascia il campo vuoto per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
         "title": "Impostazioni Amazon"
       },
       "reconfig_2": {
@@ -85,7 +85,7 @@
           "custom_days": "Days back to check for package emails (minimum 1, default 3)",
           "usps_placeholder": "Includere il segnaposto USPS senza immagine nella GIF?"
         },
-        "description": "Termina la configurazione personalizzando quanto segue in base alla struttura della tua email e all'installazione di Home Assistant.\n\nPer i dettagli sulle opzioni di [integrazione Mail e Pacchetti](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) consulta la [sezione configurazione, modelli e automazioni](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) su GitHub.\n\nSe utilizzi email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.",
+        "description": "Termina la configurazione personalizzando quanto segue in base alla struttura della tua email e all'installazione di Home Assistant.\n\nPer i dettagli sulle opzioni di [integrazione Mail e Pacchetti](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) consulta la [sezione configurazione, modelli e automazioni](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) su GitHub.\n\nSe utilizzi email inoltrate da Amazon, separa ogni indirizzo con una virgola. Lascia il campo vuoto per cancellare questa impostazione.",
         "title": "Posta e pacchi (passaggio 2 di 2)"
       },
       "reconfig_3": {
@@ -105,7 +105,7 @@
           "amazon_fwds": "Amazon ha inoltrato gli indirizzi email",
           "amazon_days": "Giorni precedenti da controllare per le email di Amazon"
         },
-        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
+        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola. Lascia il campo vuoto per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
         "title": "Impostazioni Amazon"
       },
       "config_storage": {
@@ -128,8 +128,8 @@
           "forwarded_emails": "Indirizzi email inoltrati"
         },
         "data_description": {
-          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Inserisci '(none)' o lascia vuoto per usare l'elenco di indirizzi.",
-          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia '(none)' se stai usando l'intestazione di inoltro sopra."
+          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Lascia vuoto per usare l'elenco di indirizzi.",
+          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia vuoto se stai usando l'intestazione di inoltro sopra."
         },
         "description": "Scegli come abbinare le email inoltrate.\n\n**Opzione 1 — Intestazione di inoltro**: Se il tuo servizio (es. SimpleLogin) include il mittente originale in un'intestazione personalizzata, inserisci il nome di quell'intestazione. Mail and Packages lo utilizzerà per abbinare automaticamente gli indirizzi dei corrieri.\n\n**Opzione 2 — Elenco di indirizzi**: Inserisci gli indirizzi di inoltro che il tuo servizio ha assegnato a ciascun corriere, separati da virgole.",
         "title": "Impostazioni email inoltrate"
@@ -140,8 +140,8 @@
           "forwarded_emails": "Indirizzi email inoltrati"
         },
         "data_description": {
-          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Inserisci '(none)' o lascia vuoto per usare l'elenco di indirizzi.",
-          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia '(none)' se stai usando l'intestazione di inoltro sopra."
+          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Lascia vuoto per usare l'elenco di indirizzi.",
+          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia vuoto se stai usando l'intestazione di inoltro sopra."
         },
         "description": "Scegli come abbinare le email inoltrate.\n\n**Opzione 1 — Intestazione di inoltro**: Se il tuo servizio (es. SimpleLogin) include il mittente originale in un'intestazione personalizzata, inserisci il nome di quell'intestazione. Mail and Packages lo utilizzerà per abbinare automaticamente gli indirizzi dei corrieri.\n\n**Opzione 2 — Elenco di indirizzi**: Inserisci gli indirizzi di inoltro che il tuo servizio ha assegnato a ciascun corriere, separati da virgole.",
         "title": "Impostazioni email inoltrate"
@@ -217,10 +217,14 @@
     }
   },
   "options": {
+    "error": {
+      "missing_forwarded_emails": "Indirizzi email inoltrati mancanti. Puoi inserire '(none)' per cancellare questa impostazione.",
+      "invalid_email_format": "Formato dell'indirizzo email non valido."
+    },
     "step": {
       "init": {
         "title": "Posta e pacchi (passaggio 2 di 2)",
-        "description": "Termina la configurazione personalizzando quanto segue in base alla struttura della tua email e all'installazione di Home Assistant.\n\nPer i dettagli sulle opzioni di [integrazione Mail e Pacchetti](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) consulta la [sezione configurazione, modelli e automazioni](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) su GitHub.\n\nSe utilizzi email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.",
+        "description": "Termina la configurazione personalizzando quanto segue in base alla struttura della tua email e all'installazione di Home Assistant.\n\nPer i dettagli sulle opzioni di [integrazione Mail e Pacchetti](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) consulta la [sezione configurazione, modelli e automazioni](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages/wiki/Configuration-and-Email-Settings#configuration) su GitHub.\n\nSe utilizzi email inoltrate da Amazon, separa ogni indirizzo con una virgola. Lascia il campo vuoto per cancellare questa impostazione.",
         "data": {
           "folder": "Cartella posta",
           "resources": "Elenco dei sensori",
@@ -256,7 +260,7 @@
       },
       "options_amazon": {
         "title": "Impostazioni Amazon",
-        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola o inserisci (nessuno) per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
+        "description": "Inserisci il dominio da cui Amazon invia le email (ad esempio: amazon.com o amazon.de)\n\nSe stai utilizzando email inoltrate da Amazon, separa ogni indirizzo con una virgola. Lascia il campo vuoto per cancellare questa impostazione.\n\nNota: se hai configurato un'intestazione di inoltro nel passaggio precedente, il campo dell'indirizzo di inoltro non apparirà — l'intestazione gestisce automaticamente la corrispondenza delle email Amazon.",
         "data": {
           "amazon_domain": "Dominio Amazon",
           "amazon_fwds": "Amazon ha inoltrato gli indirizzi email",
@@ -278,8 +282,8 @@
           "forwarded_emails": "Indirizzi email inoltrati"
         },
         "data_description": {
-          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Inserisci '(none)' o lascia vuoto per usare l'elenco di indirizzi.",
-          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia '(none)' se stai usando l'intestazione di inoltro sopra."
+          "forwarding_header": "Se il tuo servizio di inoltro include il mittente originale in un'intestazione, inserisci qui il nome dell'intestazione. Questo ha la precedenza sull'elenco di indirizzi seguente. Lascia vuoto per usare l'elenco di indirizzi.",
+          "forwarded_emails": "Elenco separato da virgole degli indirizzi di inoltro da cui arriveranno i messaggi. Lascia vuoto se stai usando l'intestazione di inoltro sopra."
         }
       }
     }
