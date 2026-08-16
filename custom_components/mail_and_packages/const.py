@@ -394,6 +394,19 @@ SENSOR_DATA = {
         "email": ["mcinfo@ups.com", "pkginfo@ups.com"],
         "subject": ["UPS Ship Notification"],
     },
+    "ups_pickup": {
+        "email": ["mcinfo@ups.com", "pkginfo@ups.com"],
+        # Shared substring of both subjects UPS actually sends: "UPS - Package
+        # Ready for Pickup" (pkginfo@) and "UPS My Choice - Package Ready for
+        # Pickup" (mcinfo@). Do not shorten it to "Ready for Pickup": that
+        # phrase is also used by Amazon Hub lockers (AMAZON_HUB_SUBJECT),
+        # restaurants, pharmacies and shops. The sender filter below is not a
+        # sufficient guard on its own, because on address-list forwarding
+        # GenericShipper._resolve_forwarding prepends the user's OWN forwarding
+        # addresses to this list — so for those users every relayed message
+        # satisfies the sender clause regardless of who really sent it.
+        "subject": ["Package Ready for Pickup"],
+    },
     "ups_tracking": {"pattern": ["1Z?[0-9A-Z]{16}"]},
     # FedEx
     "fedex_delivered": {
@@ -1388,6 +1401,31 @@ SENSOR_DATA = {
     "db_schenker_tracking": {"pattern": ["\\d{10,16}"]},
 }
 
+# Sensors counting an INBOUND parcel that has arrived at a carrier pickup point
+# and is waiting for the USER to collect it. Two behaviours in GenericShipper
+# key off membership here, and both are only correct for that meaning:
+#
+#   1. The search uses the extended (since_date) window instead of today only.
+#      The carrier sends exactly ONE "ready for pickup" notice and then holds
+#      the parcel for several business days, so a today-only search would
+#      report it on the day the notice arrived and 0 for the rest of the hold.
+#   2. The result is deduplicated against the shipper's _delivered tracking
+#      numbers. Collecting the parcel produces a delivered notice, but the
+#      pickup notice stays inside the extended window for days afterwards, so
+#      without this the sensor keeps counting a parcel the user already has.
+#
+# "usps_pickup" is deliberately NOT a member. It counts the OPPOSITE, OUTBOUND
+# event: a Package Pickup the user REQUESTED, where the carrier collects
+# parcels FROM the user's address. Neither behaviour transfers:
+#   1. It is a daily confirmation of that day's request, so widening its window
+#      would silently convert an existing daily-reset sensor into a rolling
+#      multi-day one — a behaviour change to a shipped sensor.
+#   2. A "usps_delivered" notice is about a parcel arriving TO the user and has
+#      nothing to do with the labels USPS is collecting FROM them; the two
+#      share a tracking-number namespace, so feeding an outbound sensor into
+#      the inbound delivered-dedup state machine could zero it for no reason.
+INBOUND_PICKUP_SENSORS: Final[frozenset[str]] = frozenset({"ups_pickup"})
+
 # Sensor definitions
 SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     "mail_updated": SensorEntityDescription(
@@ -1458,6 +1496,15 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         native_unit_of_measurement="package(s)",
         icon="mdi:package-variant-closed",
         key="ups_packages",
+    ),
+    # Deliberately not named "Scheduled Pickup" like usps_pickup: that sensor
+    # counts parcels USPS will collect FROM the user, this one counts parcels
+    # diverted to an Access Point awaiting collection BY the user.
+    "ups_pickup": SensorEntityDescription(
+        name="Mail UPS Ready for Pickup",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:package-up",
+        key="ups_pickup",
     ),
     # FedEx
     "fedex_delivered": SensorEntityDescription(

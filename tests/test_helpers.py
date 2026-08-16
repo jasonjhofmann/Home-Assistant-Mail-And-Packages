@@ -99,6 +99,18 @@ def test_get_resources():
     assert "amazon_packages" in resources
 
 
+def test_get_resources_offers_ups_pickup():
+    """The UPS ready-for-pickup sensor must be selectable in the options flow.
+
+    get_resources() is what populates the sensor multi-select in the config and
+    options flows, so a sensor missing from SENSOR_TYPES can never be enabled by
+    a user however well its emails parse. The name is asserted too because that
+    is the label the user actually picks from.
+    """
+    resources = get_resources()
+    assert resources["ups_pickup"] == "Mail UPS Ready for Pickup"
+
+
 def test_copy_images_mkdir(hass):
     """Test copy_images creating the directory."""
     config = MagicMock()

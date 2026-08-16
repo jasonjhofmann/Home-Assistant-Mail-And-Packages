@@ -14,7 +14,9 @@ from custom_components.mail_and_packages.const import (
     AMAZON_EXCEPTION,
     AMAZON_ORDER,
     ATTR_ORDER,
+    ATTR_TRACKING_NUM,
     DOMAIN,
+    SENSOR_TYPES,
 )
 from custom_components.mail_and_packages.sensor import ImagePathSensors, PackagesSensor
 from tests.conftest import resolve_entity_id
@@ -464,6 +466,73 @@ async def test_packages_sensor_attributes_edge_cases(hass):
     )
     attrs_delivering = sensor_delivering.extra_state_attributes
     assert attrs_delivering[ATTR_ORDER] == ["303-1873062-3277126"]
+
+
+def test_sensor_types_descriptions_match_their_keys():
+    """Every SENSOR_TYPES description must carry the key it is filed under.
+
+    The two halves are read by different layers: the options flow offers the
+    dict key (get_resources) and the coordinator writes its counts under that
+    key, while PackagesSensor takes self.type — and with it the tracking key,
+    the unique_id and the value it reads back — from description.key. A typo in
+    one SensorEntityDescription therefore ships a sensor the user can enable
+    but which is permanently unavailable, and nothing else in the suite would
+    notice: the entity is created, it just never finds its data.
+    """
+    mismatched = {
+        resource: description.key
+        for resource, description in SENSOR_TYPES.items()
+        if description.key != resource
+    }
+    assert mismatched == {}
+
+
+@pytest.mark.asyncio
+async def test_pickup_sensor_exposes_own_tracking(hass):
+    """Pickup sensors expose the parcels awaiting collection, not the in-transit list.
+
+    A "*_pickup" sensor is deliberately outside the in-transit state machine, so
+    resolving its tracking attribute to the shared "<prefix>_tracking" list would
+    show every package the carrier still has out for delivery — precisely the
+    packages that are *not* waiting at a pickup point.
+    """
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_HOST: "test"})
+    coordinator = MagicMock()
+    coordinator.data = {
+        "ups_pickup": 1,
+        "ups_pickup_tracking": ["1Z9999W99999999999"],
+        "usps_pickup": 1,
+        "usps_pickup_tracking": ["9400100000000000000001"],
+        # In-transit lists that must not leak into the pickup sensors
+        "ups_tracking": ["1Z0000A00000000000"],
+        "usps_tracking": ["9400100000000000000002"],
+    }
+
+    ups_desc = MagicMock(key="ups_pickup")
+    ups_desc.name = "Mail UPS Ready for Pickup"
+    ups_pickup = PackagesSensor(entry, ups_desc, coordinator)
+
+    assert ups_pickup._tracking_key == "ups_pickup_tracking"
+    assert ups_pickup.extra_state_attributes[ATTR_TRACKING_NUM] == [
+        "1Z9999W99999999999"
+    ]
+
+    # The same generic mechanism must also serve the pre-existing USPS sensor
+    usps_desc = MagicMock(key="usps_pickup")
+    usps_desc.name = "Mail USPS Scheduled Pickup"
+    usps_pickup = PackagesSensor(entry, usps_desc, coordinator)
+
+    assert usps_pickup._tracking_key == "usps_pickup_tracking"
+    assert usps_pickup.extra_state_attributes[ATTR_TRACKING_NUM] == [
+        "9400100000000000000001"
+    ]
+
+    # Delivered sensors keep resolving to their own today-only list unchanged
+    delivered_desc = MagicMock(key="ups_delivered")
+    delivered_desc.name = "Mail UPS Delivered"
+    ups_delivered = PackagesSensor(entry, delivered_desc, coordinator)
+
+    assert ups_delivered._tracking_key == "ups_delivered_tracking"
 
 
 @pytest.mark.asyncio

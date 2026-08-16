@@ -48,7 +48,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-DELIVERED_SUFFIXES = {"delivered"}
+# Sensors whose tracking numbers are published per-sensor by
+# GenericShipper._process_individual_sensors rather than being derived from the
+# shipper's shared in-transit list. Keep in sync with the suffix tuple there.
+OWN_TRACKING_SUFFIXES = {"delivered", "pickup"}
 
 
 async def async_setup_entry(
@@ -96,8 +99,8 @@ class PackagesSensor(CoordinatorEntity, RestoreSensor):
         parts = self.type.split("_")
         if len(parts) > 1:
             prefix = "_".join(parts[:-1])
-            if parts[-1] in DELIVERED_SUFFIXES:
-                self._tracking_key = f"{prefix}_delivered_tracking"
+            if parts[-1] in OWN_TRACKING_SUFFIXES:
+                self._tracking_key = f"{self.type}_tracking"
             elif parts[-1] == "packages":
                 packages_cfg = SENSOR_DATA.get(self.type, {})
                 # IMAP-backed packages (e.g. DHL "ist unterwegs") keep their
@@ -173,7 +176,13 @@ class PackagesSensor(CoordinatorEntity, RestoreSensor):
 
         if any(
             sensor in self.type
-            for sensor in ["_delivering", "_delivered", "_packages", "_exception"]
+            for sensor in [
+                "_delivering",
+                "_delivered",
+                "_packages",
+                "_exception",
+                "_pickup",
+            ]
         ):
             if tracking := data.get(self._tracking_key):
                 attr[ATTR_TRACKING_NUM] = tracking

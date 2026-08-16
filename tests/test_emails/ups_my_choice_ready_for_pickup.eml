@@ -1,0 +1,31 @@
+Delivered-To: redacted@gmail.com
+Received: from mcinfo.ups.com (mcinfo.ups.com. [192.0.2.21])
+        by mx.google.com with ESMTPS id ups456def789
+        for <redacted@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256/256);
+        Wed, 12 Aug 2026 07:22:31 -0700 (PDT)
+Return-Path: <mcinfo@ups.com>
+From: "UPS" <mcinfo@ups.com>
+To: redacted@gmail.com
+Subject: UPS My Choice - Package Ready for Pickup
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Message-ID: <20260812142231.pickup@mcinfo.ups.com>
+Date: Wed, 12 Aug 2026 14:22:31 +0000 (UTC)
+
+<!doctype html>
+<html>
+  <head>
+    <title>UPS My Choice</title>
+  </head>
+  <body style=3D"margin:0;padding:0;">
+    <h1>Your package is ready for pickup</h1>
+    <p>As requested, your package was redirected to a UPS Access Point loca=
+tion and is ready for you to collect.</p>
+    <p>Tracking Number: 1Z8888X88888888888<br />
+       Pick Up By: 08/19/2026<br />
+       Reference Number: Not Available</p>
+    <p>Please bring a government-issued photo ID.</p>
+  </body>
+</html>

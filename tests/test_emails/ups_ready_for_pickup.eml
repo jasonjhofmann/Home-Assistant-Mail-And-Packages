@@ -1,0 +1,31 @@
+Delivered-To: redacted@gmail.com
+Received: from pkginfo.ups.com (pkginfo.ups.com. [192.0.2.20])
+        by mx.google.com with ESMTPS id ups123abc456
+        for <redacted@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256/256);
+        Tue, 11 Aug 2026 06:14:02 -0700 (PDT)
+Return-Path: <pkginfo@ups.com>
+From: "UPS" <pkginfo@ups.com>
+To: redacted@gmail.com
+Subject: UPS - Package Ready for Pickup
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Message-ID: <20260811131402.pickup@pkginfo.ups.com>
+Date: Tue, 11 Aug 2026 13:14:02 +0000 (UTC)
+
+<!doctype html>
+<html>
+  <head>
+    <title>UPS</title>
+  </head>
+  <body style=3D"margin:0;padding:0;">
+    <h1>Your package is ready for pickup</h1>
+    <p>Your package could not be delivered and is being held for you at a U=
+PS Access Point location.</p>
+    <p>Tracking Number: 1Z9999W99999999999<br />
+       Pick Up By: 08/18/2026<br />
+       Reference Number: Not Available</p>
+    <p>Please bring a government-issued photo ID.</p>
+  </body>
+</html>

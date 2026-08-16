@@ -26,6 +26,7 @@ from custom_components.mail_and_packages.const import (
     CAMERA_DATA,
     CAMERA_EXTRACTION_CONFIG,
     CONF_FORWARDING_HEADER,
+    INBOUND_PICKUP_SENSORS,
     MARKETPLACE_CARRIER_TRACKING,
     SENSOR_DATA,
 )
@@ -87,8 +88,10 @@ class GenericShipper(Shipper):
     ) -> dict[str, Any]:
         """Process emails for this shipper on the given date.
 
-        since_date: if provided, used instead of date for _delivering and
-        _exception sensors so that emails from previous days are included.
+        since_date: if provided, used instead of date for sensors whose emails
+        stay relevant after the day they arrive (_delivering, _exception,
+        _packages, the INBOUND_PICKUP_SENSORS, and the deduplication pass of
+        _delivered) so that emails from previous days are included.
         """
         _LOGGER.debug("Processing generic sensor: %s", sensor_type)
 
@@ -113,6 +116,13 @@ class GenericShipper(Shipper):
 
         # _delivering/_exception/_packages use the extended window so in-transit
         # packages remain visible across the midnight boundary.
+        # The INBOUND_PICKUP_SENSORS need it for the same reason: the carrier
+        # sends ONE "ready for pickup" notice and then holds the parcel for
+        # several business days, so a today-only search would report the parcel
+        # on the day the notice arrived and zero for the rest of the hold. The
+        # membership test is deliberately not an endswith("_pickup"): usps_pickup
+        # confirms an OUTBOUND collection the user requested and must keep its
+        # today-only window (see INBOUND_PICKUP_SENSORS in const.py).
         # _delivered uses today's date for the sensor count (resets at midnight)
         # but also searches the extended window to obtain tracking numbers for
         # deduplication — without those, a package delivered yesterday would still
@@ -122,8 +132,11 @@ class GenericShipper(Shipper):
         search_date = date
         if (
             since_date
-            and sensor_type.endswith(
-                ("_delivering", "_exception", "_delivered", "_packages")
+            and (
+                sensor_type.endswith(
+                    ("_delivering", "_exception", "_delivered", "_packages")
+                )
+                or sensor_type in INBOUND_PICKUP_SENSORS
             )
             and sensor_type != "post_de_delivering"
         ):
@@ -263,6 +276,18 @@ class GenericShipper(Shipper):
             res.update(sensor_res)
             # Expose per-sensor raw tracking for coordinator state management.
             # Keyed as "_tracking_details" to distinguish from the public data dict.
+            # _pickup is deliberately absent: making a pickup notice clear the
+            # in-transit state (a parcel held at a pickup point is no longer
+            # out for delivery) needs a new transition in
+            # MailDataUpdateCoordinator._update_tracking_for_prefix, which
+            # today only knows "delivering" and "delivered". That is left to a
+            # follow-up; until then a pickup notice leaves the in-transit
+            # state exactly as the delivering/delivered emails set it. The
+            # consequence is explicit and accepted: a parcel diverted to an
+            # Access Point stays in the in-transit map, so from the pickup
+            # notice until the carrier's delivered email arrives (i.e. until
+            # the user actually collects it) the SAME parcel is counted by
+            # both <prefix>_delivering and <prefix>_pickup.
             if tracking and sensor.endswith(
                 ("_delivering", "_delivered", "_exception")
             ):
@@ -294,9 +319,18 @@ class GenericShipper(Shipper):
                 sensor_res[sensor] = sensor_res[ATTR_COUNT]
 
             # Capture today-only tracking for _delivered sensors BEFORE
-            # _deduplicate_batch_tracking runs (which currently only modifies
-            # _delivering and _packages sensor results).
-            if sensor_res.get(ATTR_TRACKING) and sensor.endswith("_delivered"):
+            # _deduplicate_batch_tracking runs (it deduplicates against the
+            # extended-window list in "pre_filtered_tracking" instead).
+            # _pickup sensors need their own list for a different reason, and
+            # both directions of "pickup" need it: they are not part of the
+            # in-transit state machine, so without this the entity would fall
+            # back to "<prefix>_tracking" and show every package the carrier
+            # has OUT FOR DELIVERY instead of the labels this sensor is about.
+            # Deduplication does modify the INBOUND_PICKUP_SENSORS, so
+            # _apply_deduplication keeps their copy of the list in step.
+            if sensor_res.get(ATTR_TRACKING) and sensor.endswith(
+                ("_delivered", "_pickup")
+            ):
                 sensor_res[f"{sensor}_tracking"] = sensor_res[ATTR_TRACKING]
 
             # Record results for post-processing
@@ -337,6 +371,22 @@ class GenericShipper(Shipper):
                 )
             elif sensor.endswith(("_delivering", "_exception")):
                 shippers[prefix]["delivering"].update(tracking)
+                shippers[prefix]["update_targets"].append((sensor, sensor_res))
+            elif sensor in INBOUND_PICKUP_SENSORS:
+                # Collecting a parcel from the pickup point produces a
+                # _delivered notice, so an inbound pickup sensor has to be
+                # deduplicated against _delivered exactly like _delivering —
+                # otherwise it keeps counting a parcel the user is already
+                # holding for the rest of the extended search window. Only the
+                # INBOUND_PICKUP_SENSORS belong here: usps_pickup counts an
+                # outbound collection request, which a delivered notice says
+                # nothing about (see INBOUND_PICKUP_SENSORS in const.py).
+                # It is deliberately NOT added to the shared "delivering" set:
+                # that set exists to subtract in-transit parcels from
+                # _packages, and a pickup notice says nothing about what the
+                # carrier still has out for delivery — a parcel already sitting
+                # at an Access Point must still be counted by _packages if the
+                # ship notification is the only other email about it.
                 shippers[prefix]["update_targets"].append((sensor, sensor_res))
             elif sensor.endswith("_packages"):
                 shippers[prefix]["package_targets"].append((sensor, sensor_res))
@@ -383,6 +433,11 @@ class GenericShipper(Shipper):
                 sensor_res[sensor] = len(new_tracking)
                 if ATTR_COUNT in sensor_res:
                     sensor_res[ATTR_COUNT] = len(new_tracking)
+                # Sensors that publish their own list (e.g. _pickup) captured
+                # it before deduplication ran; refresh it so the tracking_#
+                # attribute cannot outlive the count it belongs to.
+                if f"{sensor}_tracking" in sensor_res:
+                    sensor_res[f"{sensor}_tracking"] = new_tracking
 
     def _compute_package_totals(
         self,

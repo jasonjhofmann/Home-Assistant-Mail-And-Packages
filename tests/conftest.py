@@ -251,6 +251,37 @@ def mock_imap():
 
 
 @pytest.fixture
+def mock_imap_mailbox(mock_imap):
+    """Return a factory that serves a fixed multi-message mailbox.
+
+    Call it with a {uid: raw_message_bytes} map. Every SEARCH answers with
+    every UID, because the mock cannot evaluate IMAP criteria; the narrowing is
+    then done by the code under test in
+    GenericShipper._verify_matched_subjects. That is exactly the layer a batch
+    of several sensors sharing one mailbox depends on, so tests that need to
+    show one sensor's emails not bleeding into a sibling need this, rather than
+    a per-sensor canned response that assumes the split already worked.
+    """
+
+    def _serve(messages: dict[str, bytes]):
+        uids = " ".join(messages).encode()
+
+        async def search(*_args, **_kwargs):
+            return MagicMock(result="OK", lines=[uids])
+
+        async def fetch(email_id, _parts):
+            uid = email_id.decode() if isinstance(email_id, bytes) else str(email_id)
+            header = f"{uid} (UID {uid} BODY[TEXT] {{1234}}".encode()
+            return MagicMock(result="OK", lines=[header, messages[uid]])
+
+        mock_imap.search.side_effect = search
+        mock_imap.fetch.side_effect = fetch
+        return mock_imap
+
+    return _serve
+
+
+@pytest.fixture
 def mock_imap_login_error(mock_imap):
     """Mock aioimaplib login failure."""
     mock_imap.protocol.state = aioimaplib.NONAUTH
@@ -1254,6 +1285,30 @@ def mock_imap_ups_delivered_with_photo(mock_imap):
     mock_imap.select.return_value = ("OK", [b""])
     mock_imap.uid.return_value = MagicMock(result="OK", lines=[b"1"])
     email_file = Path("tests/test_emails/ups_delivered_with_photo.eml").read_text(
+        encoding="utf-8",
+    )
+    mock_imap.fetch.side_effect = _generate_fetch_side_effect(email_file)
+    return mock_imap
+
+
+@pytest.fixture
+def mock_imap_ups_ready_for_pickup(mock_imap):
+    """Mock IMAP search with UPS Access Point ready-for-pickup email."""
+    mock_imap.select.return_value = ("OK", [b""])
+    mock_imap.uid.return_value = MagicMock(result="OK", lines=[b"1"])
+    email_file = Path("tests/test_emails/ups_ready_for_pickup.eml").read_text(
+        encoding="utf-8",
+    )
+    mock_imap.fetch.side_effect = _generate_fetch_side_effect(email_file)
+    return mock_imap
+
+
+@pytest.fixture
+def mock_imap_ups_my_choice_ready_for_pickup(mock_imap):
+    """Mock IMAP search with UPS My Choice ready-for-pickup email."""
+    mock_imap.select.return_value = ("OK", [b""])
+    mock_imap.uid.return_value = MagicMock(result="OK", lines=[b"1"])
+    email_file = Path("tests/test_emails/ups_my_choice_ready_for_pickup.eml").read_text(
         encoding="utf-8",
     )
     mock_imap.fetch.side_effect = _generate_fetch_side_effect(email_file)

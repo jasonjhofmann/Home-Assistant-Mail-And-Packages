@@ -489,6 +489,15 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
             delivering = list(tracking_details.get(f"{prefix}_delivering", []))
             delivering += list(tracking_details.get(f"{prefix}_exception", []))
             delivered = list(tracking_details.get(f"{prefix}_delivered", []))
+            # No f"{prefix}_pickup" lookup on purpose: a parcel held at a
+            # pickup point has stopped moving but has not been received, so it
+            # fits neither list here. Teaching this state machine a third
+            # transition is deliberately left to a follow-up; the generic
+            # shipper therefore never reports _pickup in tracking_details.
+            # Accepted consequence until then: a parcel diverted to a pickup
+            # point stays in the in-transit map, so between the pickup notice
+            # and the delivered notice that collecting it produces, the same
+            # parcel is counted by both _delivering and _pickup.
 
             self._update_tracking_for_prefix(
                 prefix, delivering, delivered, today_iso, MAX_TRACKING_AGE_DAYS
